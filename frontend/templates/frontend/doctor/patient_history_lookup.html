@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Patient History Lookup</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:doctor_dashboard' %}">Dashboard</a>
+    </div>
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-auto">
+            <input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Patient username or ID" />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+
+    {% if patient %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="fw-semibold">Patient: {{ patient.username }} (ID {{ patient.id }})</div>
+            <div class="small text-muted">Blood: {{ medical_record.blood_type|default:'-' }}</div>
+            <div class="mt-2">
+                <div><strong>Allergies:</strong> {{ medical_record.allergies|default:'None' }}</div>
+                <div><strong>Chronic Conditions:</strong> {{ medical_record.chronic_conditions|default:'-' }}</div>
+                <div><strong>Past Surgeries:</strong> {{ medical_record.past_surgeries|default:'-' }}</div>
+                <div><strong>Current Medications:</strong> {{ medical_record.current_medications|default:'-' }}</div>
+                <div><strong>Family History:</strong> {{ medical_record.family_history|default:'-' }}</div>
+                <div><strong>Social History:</strong> {{ medical_record.social_history|default:'-' }}</div>
+                <div><strong>Notes:</strong> {{ medical_record.notes|default:'-' }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Add History Entry</div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-2">{{ form.case_summary.label_tag }} {{ form.case_summary }}</div>
+                        <div class="mb-2">{{ form.diagnosis.label_tag }} {{ form.diagnosis }}</div>
+                        <div class="mb-2">{{ form.treatment_plan.label_tag }} {{ form.treatment_plan }}</div>
+                        <div class="mb-2">{{ form.notes.label_tag }} {{ form.notes }}</div>
+                        <button class="btn btn-primary" type="submit">Add Entry</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Previous History Entries</div>
+                <div class="list-group list-group-flush">
+                    {% for e in history_entries %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div class="fw-semibold">{{ e.visit_date|date:'Y-m-d H:i' }}</div>
+                            <div class="text-muted">by {{ e.doctor.username }}</div>
+                        </div>
+                        <div><strong>Case:</strong> {{ e.case_summary }}</div>
+                        {% if e.diagnosis %}<div><strong>Diagnosis:</strong> {{ e.diagnosis }}</div>{% endif %}
+                        {% if e.treatment_plan %}<div><strong>Treatment:</strong> {{ e.treatment_plan }}</div>{% endif %}
+                        {% if e.notes %}<div><strong>Notes:</strong> {{ e.notes }}</div>{% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-muted">No entries yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Medicine</th>
+                        <th>Dosage</th>
+                        <th>Duration</th>
+                        <th>Qty</th>
+                        <th>Status</th>
+                        <th>Dispensed By</th>
+                        <th>Dispensed Date</th>
+                        <th>Prescribed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in prescriptions %}
+                    <tr>
+                        <td>{{ p.medicine.name }}</td>
+                        <td>{{ p.dosage }}</td>
+                        <td>{{ p.duration }}</td>
+                        <td>{{ p.quantity }}</td>
+                        <td>
+                            {% if p.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif p.status == 'dispensed' %}
+                                <span class="badge bg-success">Dispensed</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Cancelled</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ p.dispensed_by.username|default:'-' }}</td>
+                        <td>{{ p.dispensed_date|date:'Y-m-d H:i'|default:'-' }}</td>
+                        <td>{{ p.prescribed_date|date:'Y-m-d H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">No prescriptions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% elif q %}
+        <div class="alert alert-warning">No patient found for "{{ q }}"</div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">{{ medicine.name }}</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" href="{% url 'frontend:medicine_trace' medicine.id %}">Trace Batches</a>
+            <a class="btn btn-outline-secondary" href="{% url 'frontend:medicine_catalog' %}">Back to Catalog</a>
+        </div>
+    </div>
+    <div class="mb-3 text-muted">{{ medicine.generic_name }} • {{ medicine.strength }} • {{ medicine.dosage_form }}</div>
+
+    <div id="map" style="height: 380px;" class="mb-3"></div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Pharmacy</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Batch</th>
+                        <th>Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in inventories %}
+                    {% with p=inv.pharmacist.pharmacist_profile %}
+                    <tr>
+                        <td>{{ p.pharmacy_name|default:inv.pharmacist.username }}</td>
+                        <td>{{ p.address|default:'-' }}</td>
+                        <td>{{ p.phone|default:'-' }}</td>
+                        <td>{{ inv.batch.batch_number }}</td>
+                        <td>{{ inv.current_stock }}</td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No pharmacies with stock.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+    const map = L.map('map').setView([9.0108, 38.7613], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const pharmacies = [
+        {% for inv in inventories %}
+        {% with p=inv.pharmacist.pharmacist_profile %}
+        {% if p.latitude and p.longitude %}
+        {name: "{{ p.pharmacy_name|default:inv.pharmacist.username }}", lat: {{ p.latitude }}, lng: {{ p.longitude }}, stock: {{ inv.current_stock }}, address: "{{ p.address|default:'' }}"},
+        {% endif %}
+        {% endwith %}
+        {% endfor %}
+    ];
+    if (pharmacies.length) {
+        pharmacies.forEach(ph => {
+            L.marker([ph.lat, ph.lng]).addTo(map).bindPopup(`<strong>${ph.name}</strong><br/>${ph.address}<br/>Stock: ${ph.stock}`);
+        });
+        const group = L.featureGroup(pharmacies.map(ph => L.marker([ph.lat, ph.lng])));
+        map.fitBounds(group.getBounds().pad(0.2));
+    }
+</script>
+{% endblock %}
+
+

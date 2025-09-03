@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">My Prescriptions</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:patient_dashboard' %}">Dashboard</a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Doctor</th>
+                        <th>Medicine</th>
+                        <th>Dosage</th>
+                        <th>Duration</th>
+                        <th>Qty</th>
+                        <th>Status</th>
+                        <th>Prescribed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in prescriptions %}
+                    <tr>
+                        <td>{{ p.doctor.username }}</td>
+                        <td>{{ p.medicine.name }}</td>
+                        <td>{{ p.dosage }}</td>
+                        <td>{{ p.duration }}</td>
+                        <td>{{ p.quantity }}</td>
+                        <td>
+                            {% if p.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif p.status == 'dispensed' %}
+                                <span class="badge bg-success">Dispensed</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Cancelled</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ p.prescribed_date|date:'Y-m-d H:i' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No prescriptions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'frontend:manufacturer_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:medicine_list' %}">
+                    <i class="fas fa-pills"></i> Medicines
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:batch_list' %}">
+                    <i class="fas fa-boxes"></i> Batches
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:inventory_management' %}">
+                    <i class="fas fa-warehouse"></i> Inventory
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:transfer_medicine' %}">
+                    <i class="fas fa-truck"></i> Transfer Medicine
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Manufacturer Dashboard</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'frontend:medicine_list' %}" class="btn btn-sm btn-outline-primary">Add Medicine</a>
+                <a href="{% url 'frontend:batch_list' %}" class="btn btn-sm btn-outline-success">Add Batch</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Medicines</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_medicines }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-pills fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Batches</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_batches }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Inventory</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_inventory }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-warehouse fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Expiring Soon</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ expiring_batches.count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Section -->
+    {% if expiring_batches %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Expiring Batches (Within 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Medicine</th>
+                                    <th>Batch Number</th>
+                                    <th>Expiry Date</th>
+                                    <th>Current Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in expiring_batches %}
+                                <tr>
+                                    <td>{{ batch.medicine.name }}</td>
+                                    <td>{{ batch.batch_number }}</td>
+                                    <td>{{ batch.expiry_date }}</td>
+                                    <td>{{ batch.inventory.current_stock }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if low_stock_inventory %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-circle"></i> Low Stock Alert</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Medicine</th>
+                                    <th>Batch Number</th>
+                                    <th>Current Stock</th>
+                                    <th>Minimum Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_inventory %}
+                                <tr>
+                                    <td>{{ item.batch.medicine.name }}</td>
+                                    <td>{{ item.batch.batch_number }}</td>
+                                    <td>{{ item.current_stock }}</td>
+                                    <td>{{ item.minimum_stock_level }}</td>
+                                    <td><span class="badge bg-danger">Low Stock</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Transfers -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Transfers</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_transfers %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Medicine</th>
+                                    <th>Batch</th>
+                                    <th>Quantity</th>
+                                    <th>To</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transfer in recent_transfers %}
+                                <tr>
+                                    <td>{{ transfer.transfer_date|date:"M d, Y" }}</td>
+                                    <td>{{ transfer.batch.medicine.name }}</td>
+                                    <td>{{ transfer.batch.batch_number }}</td>
+                                    <td>{{ transfer.quantity }}</td>
+                                    <td>{{ transfer.to_user.username }}</td>
+                                    <td>
+                                        {% if transfer.is_completed %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent transfers found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<style>
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.card {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    border: none;
+    border-radius: 0.35rem;
+}
+
+.card-header {
+    border-bottom: 1px solid #e3e6f0;
+    font-weight: 700;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #5a5c69;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "admin/base_site.html" %}
+{% block title %}MediFlow Admin{% endblock %}
+{% block extrahead %}
+{{ block.super }}
+<style>
+:root { --brand:#0d6efd; }
+.branding h1 a { color: var(--brand) !important; font-weight: 700; }
+.module .dashboard-metric { display:flex; align-items:center; gap:.75rem; }
+.dashboard-metric .value { font-size:1.4rem; font-weight:700; }
+.dashboard-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+</style>
+{% endblock %}
+{% block branding %}
+<div class="branding">
+  <h1 id="site-name"><a href="{% url 'admin:index' %}">MediFlow Admin</a></h1>
+</div>
+{% endblock %}
+

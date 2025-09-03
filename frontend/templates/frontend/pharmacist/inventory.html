@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">My Inventory</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:pharmacist_dashboard' %}">Dashboard</a>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Medicine</th>
+                        <th>Batch</th>
+                        <th>Manufactured</th>
+                        <th>Expires</th>
+                        <th>Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.batch.medicine.name }}</td>
+                        <td>{{ item.batch.batch_number }}</td>
+                        <td>{{ item.batch.manufacturing_date|date:'Y-m-d' }}</td>
+                        <td>
+                            {{ item.batch.expiry_date|date:'Y-m-d' }}
+                            {% if item.batch.is_expired %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% elif item.batch.is_expiring_soon %}
+                                <span class="badge bg-warning text-dark">Soon</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.current_stock }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted">No items.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Dispense Prescription</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'prescription:pharmacist_queue' %}">Back to Queue</a>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Prescription</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Patient</dt>
+                        <dd class="col-sm-8">{{ prescription.patient.username }}</dd>
+                        <dt class="col-sm-4">Doctor</dt>
+                        <dd class="col-sm-8">{{ prescription.doctor.username }}</dd>
+                        <dt class="col-sm-4">Medicine</dt>
+                        <dd class="col-sm-8">{{ prescription.medicine.name }}</dd>
+                        <dt class="col-sm-4">Dosage</dt>
+                        <dd class="col-sm-8">{{ prescription.dosage }}</dd>
+                        <dt class="col-sm-4">Duration</dt>
+                        <dd class="col-sm-8">{{ prescription.duration }}</dd>
+                        <dt class="col-sm-4">Quantity</dt>
+                        <dd class="col-sm-8">{{ prescription.quantity }}</dd>
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">{{ prescription.get_status_display }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Update</div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ form.status.label_tag }}
+                            {{ form.status }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Dispense From Batch (Your Stock)</label>
+                            {{ form.pharmacy_inventory }}
+                            <div class="form-text">Select a batch from your pharmacy inventory with sufficient stock.</div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.notes.label_tag }}
+                            {{ form.notes }}
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

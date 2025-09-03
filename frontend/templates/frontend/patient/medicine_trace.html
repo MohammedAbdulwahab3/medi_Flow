@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Trace: {{ medicine.name }}</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:medicine_catalog' %}">Back to Catalog</a>
+    </div>
+    <div class="mb-2 text-muted">{{ medicine.generic_name }} • {{ medicine.strength }} • {{ medicine.dosage_form }}</div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Batch</th>
+                        <th>Manufactured</th>
+                        <th>Expires</th>
+                        <th>Total Pharmacy Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in batch_rows %}
+                    <tr>
+                        <td>{{ row.batch.batch_number }}</td>
+                        <td>{{ row.batch.manufacturing_date|date:'Y-m-d' }}</td>
+                        <td>
+                            {{ row.batch.expiry_date|date:'Y-m-d' }}
+                            {% if row.batch.is_expired %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% elif row.batch.is_expiring_soon %}
+                                <span class="badge bg-warning text-dark">Soon</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.total_stock }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted">No batches.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

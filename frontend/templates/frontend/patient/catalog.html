@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Medicine Catalog</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:patient_dashboard' %}">Dashboard</a>
+    </div>
+    <form method="get" class="input-group mb-3">
+        <input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Search by name or generic" />
+        <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+    <div class="row g-3">
+        {% for m in medicines %}
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ m.name }}</h5>
+                    <div class="text-muted">{{ m.generic_name }}</div>
+                    <div class="small">{{ m.strength }} • {{ m.dosage_form }}</div>
+                    <p class="mt-2">{{ m.description|default:'No description'|truncatewords:20 }}</p>
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'frontend:medicine_availability' m.id %}">Check Availability</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted">No medicines found.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+

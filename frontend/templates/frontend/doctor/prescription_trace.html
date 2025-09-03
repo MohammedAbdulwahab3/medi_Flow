@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Prescription Trace</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'prescription:doctor_list' %}">Back to My Prescriptions</a>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Prescription</div>
+                <div class="card-body">
+                    <div><strong>Patient:</strong> {{ prescription.patient.username }}</div>
+                    <div><strong>Medicine:</strong> {{ prescription.medicine.name }}</div>
+                    <div><strong>Dosage:</strong> {{ prescription.dosage }}</div>
+                    <div><strong>Duration:</strong> {{ prescription.duration }}</div>
+                    <div><strong>Quantity:</strong> {{ prescription.quantity }}</div>
+                    <div><strong>Status:</strong> {{ prescription.status }}</div>
+                    <div><strong>Dispensed By:</strong> {{ prescription.dispensed_by.username|default:'-' }}</div>
+                    <div><strong>Dispensed Date:</strong> {{ prescription.dispensed_date|date:'Y-m-d H:i'|default:'-' }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Batch & Manufacturer</div>
+                <div class="card-body">
+                    {% if batch %}
+                        <div><strong>Batch:</strong> {{ batch.batch_number }}</div>
+                        <div><strong>Manufactured:</strong> {{ batch.manufacturing_date|date:'Y-m-d' }}</div>
+                        <div><strong>Expires:</strong> {{ batch.expiry_date|date:'Y-m-d' }}</div>
+                        <div><strong>Cost Price:</strong> {{ batch.cost_price }}</div>
+                        <div><strong>Selling Price:</strong> {{ batch.selling_price }}</div>
+                        <div class="mt-2">
+                            <strong>Manufacturer:</strong> {{ manufacturer.username }}
+                        </div>
+                    {% else %}
+                        <div class="text-muted">No batch recorded yet. This will appear after dispensing.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

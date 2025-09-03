@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Prescription Queue</h1>
+    </div>
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-auto">
+            <input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Patient username or ID" />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-outline-primary" type="submit">Search</button>
+            <a class="btn btn-link" href="{% url 'prescription:pharmacist_queue' %}">Clear</a>
+        </div>
+    </form>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Medicine</th>
+                        <th>Dosage</th>
+                        <th>Qty</th>
+                        <th>Prescribed</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in prescriptions %}
+                    <tr>
+                        <td>{{ p.patient.username }}</td>
+                        <td>{{ p.doctor.username }}</td>
+                        <td>{{ p.medicine.name }}</td>
+                        <td>{{ p.dosage }}</td>
+                        <td>{{ p.quantity }}</td>
+                        <td>{{ p.prescribed_date|date:'Y-m-d H:i' }}</td>
+                        <td>
+                            <a class="btn btn-sm btn-primary" href="{% url 'prescription:pharmacist_dispense' p.pk %}">Dispense</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No pending prescriptions.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
