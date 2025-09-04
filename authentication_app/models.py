@@ -1,9 +1,30 @@
 from django.db import models
 import uuid as uuid_lib
+import random
+import string
 from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     uuid = models.UUIDField(default=uuid_lib.uuid4, editable=False, unique=True)
+    # short public id for easy reference
+    def _gen_public_id():
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+    public_id = models.CharField(max_length=12, default=_gen_public_id, unique=True, editable=False)
+    # personal/profile fields
+    full_name = models.CharField(max_length=255, blank=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    GENDER_MALE = 'male'
+    GENDER_FEMALE = 'female'
+    GENDER_OTHER = 'other'
+    GENDER_CHOICES = [
+        (GENDER_MALE, 'Male'),
+        (GENDER_FEMALE, 'Female'),
+        (GENDER_OTHER, 'Other'),
+    ]
+    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    emergency_contact = models.CharField(max_length=100, blank=True)
     ROLE_ADMIN = 'admin'
     ROLE_DOCTOR = 'doctor'
     ROLE_PHARMACIST = 'pharmacist'
@@ -23,7 +44,17 @@ class User(AbstractUser):
     national_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
 
     def __str__(self):
-        return f"{self.username} ({self.get_role_display()})"
+        display = self.full_name or f"{self.first_name} {self.last_name}".strip() or self.username
+        return f"{display} ({self.get_role_display()})"
+
+    @property
+    def age(self):
+        if not self.date_of_birth:
+            return None
+        from datetime import date
+        today = date.today()
+        born = self.date_of_birth
+        return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
     @property
     def is_doctor(self):
