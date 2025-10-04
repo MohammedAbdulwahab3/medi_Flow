@@ -55,7 +55,7 @@ class ApiService {
 
   static Future<Map<String, String>> _authHeaders() async {
   final token = await _read('access');
-  return {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token ?? '')};
+  return {'Content-Type': 'application/json', 'Authorization': 'Bearer ${token ?? ''}'};
   }
 
   static Future<dynamic> getPrescriptions() async {
@@ -64,7 +64,7 @@ class ApiService {
     final res = await http.get(url, headers: headers);
   if (res.statusCode == 200) return json.decode(res.body);
   print('Get prescriptions failed: ${res.statusCode} - ${res.body}');
-  throw Exception('Failed to load prescriptions: ' + res.statusCode.toString());
+  throw Exception('Failed to load prescriptions: ${res.statusCode}');
   }
 
   static Future<dynamic> getPrescriptionDetail(int id) async {
@@ -82,7 +82,7 @@ class ApiService {
     final q = <String>[];
     if (search != null && search.isNotEmpty) q.add('search=${Uri.encodeComponent(search)}');
     q.add('page=$page');
-    final url = Uri.parse('$baseUrl/medicines/?' + q.join('&'));
+    final url = Uri.parse('$baseUrl/medicines/?${q.join('&')}');
     final headers = await _authHeaders();
     final res = await http.get(url, headers: headers);
     if (res.statusCode == 200) return json.decode(res.body);
@@ -97,7 +97,7 @@ class ApiService {
       q.add('lng=$lng');
     }
     if (radiusKm != null) q.add('radius_km=$radiusKm');
-    final url = Uri.parse('$baseUrl/medicine/$id/availability/' + (q.isNotEmpty ? '?${q.join('&')}' : ''));
+    final url = Uri.parse('$baseUrl/medicine/$id/availability/${q.isNotEmpty ? '?${q.join('&')}' : ''}');
     final headers = await _authHeaders();
     final res = await http.get(url, headers: headers);
     if (res.statusCode == 200) return json.decode(res.body);

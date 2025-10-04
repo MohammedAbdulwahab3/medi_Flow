@@ -60,6 +60,10 @@ class _MedicineListScreenState extends State<MedicineListScreen> {
                     },
                   ),
           ),
+        FloatingActionButton(child: Text("my prescription"),
+         onPressed: (){
+Navigator.pushReplacementNamed(context, '/prescriptions');
+        }),
         ],
       ),
     );

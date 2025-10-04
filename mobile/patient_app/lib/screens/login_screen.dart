@@ -18,11 +18,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final ok = await ApiService.login(_userCtrl.text.trim(), _passCtrl.text);
     setState(() => _isLoading = false);
     if (ok) {
-      Navigator.pushReplacementNamed(context, '/prescriptions');
+      Navigator.pushReplacementNamed(context, '/medicines');
     } else {
   // try to read last login error from storage for better feedback
   final err = await ApiService.getLastLoginError();
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: ' + (err ?? 'unknown'))));
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: ${err ?? 'unknown'}')));
     }
   }
 

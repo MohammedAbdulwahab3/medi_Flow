@@ -55,10 +55,13 @@ INSTALLED_APPS = [
     'medicine',
     'inventory',
     'prescription',
+    'api',
+
+    
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'api',
+    
 ]
 
 MIDDLEWARE = [

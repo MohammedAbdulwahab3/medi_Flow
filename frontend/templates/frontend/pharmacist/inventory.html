@@ -15,11 +15,13 @@
                         <th>Manufactured</th>
                         <th>Expires</th>
                         <th>Stock</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in items %}
-                    <tr>
+                    {% for row in rows %}
+                        {% with item=row.item manufacturers=row.manufacturers %}
+                        <tr>
                         <td>{{ item.batch.medicine.name }}</td>
                         <td>{{ item.batch.batch_number }}</td>
                         <td>{{ item.batch.manufacturing_date|date:'Y-m-d' }}</td>
@@ -32,15 +34,178 @@
                             {% endif %}
                         </td>
                         <td>{{ item.current_stock }}</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'frontend:pharmacist_medicine_search' %}?med_id={{ item.batch.medicine.id }}&amp;med_name={{ item.batch.medicine.name|urlencode }}">
+                                <i class="fas fa-paper-plane"></i> Request
+                            </a>
+                            <a class="btn btn-sm btn-link ms-2" href="{% url 'frontend:pharmacist_reservations' %}">My Requests</a>
+                            <!-- Hidden manufacturer select fragment for this row -->
+                            <div id="manufacturers-fragment-{{ item.id }}" style="display:none;">
+                                <label class="form-label">Select Manufacturer</label>
+                                <select class="form-select" id="manufacturers_select_{{ item.id }}">
+                                    {% for m in manufacturers %}
+                                        <option value="{{ m.id }}">{{ m.get_full_name|default:m.username }}</option>
+                                    {% empty %}
+                                        <option value="">No manufacturers available</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </td>
                     </tr>
+                        {% endwith %}
                     {% empty %}
-                    <tr><td colspan="4" class="text-center text-muted">No items.</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted">No items.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+<!-- Request Modal -->
+<div class="modal fade" id="requestReservationModal" tabindex="-1" aria-labelledby="requestReservationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="requestReservationModalLabel">Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="requestReservationForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="inventory_id" id="request_inventory_id" value="">
+                    <input type="hidden" name="medicine_id" id="request_medicine_id" value="">
+                    <p>Requesting:</p>
+                    <p class="fw-bold" id="request_med_name"></p>
+                        <div id="request_manufacturers_container" class="mb-3"></div>
+                        <div id="request_error_area"></div>
+                    <div class="mb-3">
+                        <label for="request_quantity" class="form-label">Quantity</label>
+                        <input type="number" name="quantity" id="request_quantity" class="form-control" min="1" value="1">
+                        <div class="form-text">A request will be sent to the selected manufacturer.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="request_note" class="form-label">Note (optional)</label>
+                        <textarea id="request_note" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openRequestModal(inventoryId, medName, currentStock, medId) {
+    var invInput = document.getElementById('request_inventory_id');
+    var medNameEl = document.getElementById('request_med_name');
+    var medIdInput = document.getElementById('request_medicine_id');
+    if (invInput) invInput.value = inventoryId;
+    if (medNameEl) medNameEl.textContent = medName + ' (You have ' + currentStock + ' in stock)';
+    if (medIdInput) medIdInput.value = medId || '';
+    console.log('openRequestModal:', { inventoryId: inventoryId, medId: medId, medName: medName });
+
+    // Inject manufacturer select from hidden fragment
+    var frag = document.getElementById('manufacturers-fragment-' + inventoryId);
+    var container = document.getElementById('request_manufacturers_container');
+    if (frag && container) {
+        container.innerHTML = frag.innerHTML;
+    } else if (container) {
+        container.innerHTML = '<div class="alert alert-warning">No manufacturers found</div>';
+    }
+
+    // manufacturers fragment injection handled above
+
+    var modal = new bootstrap.Modal(document.getElementById('requestReservationModal'));
+    modal.show();
+}
+
+var requestForm = document.getElementById('requestReservationForm');
+if (requestForm) {
+    requestForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+        console.log('requestReservationForm submit clicked');
+    var inventoryId = document.getElementById('request_inventory_id').value;
+    var quantity = document.getElementById('request_quantity').value || 1;
+    var medId = document.getElementById('request_medicine_id').value || '';
+    // Find selected manufacturer from injected select
+    var manufSelect = document.querySelector('#request_manufacturers_container select');
+    var manufacturer_id = manufSelect ? manufSelect.value : '';
+
+    if (!manufacturer_id || !medId) {
+        // Fallback: attempt to post to the simpler request endpoint which works by inventory id
+        fetch('{% url "frontend:request_reservation" inventory_id=0 %}'.replace('/0/', '/' + inventoryId + '/'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value
+            },
+            body: new URLSearchParams({ 'quantity': quantity })
+        }).then(function(resp) {
+            if (resp.redirected) window.location = resp.url;
+        }).catch(function(err) { alert('Request failed: ' + err); });
+        return;
+    }
+
+    // POST to create_reservation_request with manufacturer + medicine
+    fetch('{% url "frontend:create_reservation_request" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams({ 'manufacturer_id': manufacturer_id, 'medicine_id': medId, 'quantity': quantity, 'note': document.getElementById('request_note').value || '' })
+    }).then(function(resp) {
+        // If server returned JSON error (bad request), show inline
+        var ct = resp.headers.get('content-type') || '';
+        if (resp.status === 400 && ct.indexOf('application/json') !== -1) {
+            return resp.json().then(function(data) {
+                var area = document.getElementById('request_error_area');
+                if (area) area.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Insufficient stock') + '</div>';
+            }).catch(function() {
+                alert('Request failed.');
+            });
+        }
+
+        // If response contains JSON, parse it and act accordingly
+        if (ct.indexOf('application/json') !== -1) {
+            return resp.json().then(function(data) {
+                if (data && data.ok) {
+                    var modalEl = document.getElementById('requestReservationModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    window.location = '{% url "frontend:pharmacist_inventory" %}';
+                } else if (data && data.error) {
+                    var area = document.getElementById('request_error_area');
+                    if (area) area.innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
+                } else if (resp.redirected) {
+                    window.location = resp.url;
+                }
+            }).catch(function() {
+                if (resp.redirected) window.location = resp.url;
+                else alert('Request failed.');
+            });
+        }
+
+        // Otherwise, if server redirected or returned ok, follow redirect or reload
+        if (resp.redirected) {
+            window.location = resp.url;
+        } else if (resp.ok) {
+            // assume success
+            var modalEl = document.getElementById('requestReservationModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            window.location = '{% url "frontend:pharmacist_inventory" %}';
+        } else {
+            alert('Request failed.');
+        }
+    }).catch(function(err) { alert('Request failed: ' + err); });
+});
+} // end if requestForm
+</script>
 {% endblock %}
 
 

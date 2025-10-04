@@ -233,6 +233,8 @@
                         {% endif %}
                     </div>
                     {{ form.from_user }}
+                    <!-- Hidden to receive reservation id if redirected from an accepted reservation -->
+                    <input type="hidden" name="reservation_id" id="reservation_id_input" value="">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -319,6 +321,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Quantity must be greater than 0');
             }
         });
+    }
+
+    // If server provided prefill params, set fields and auto-open modal
+    var prefill = {{ prefill|default:"{}"|safe }};
+    try {
+        if (prefill && (prefill.batch_id || prefill.quantity)) {
+            // set batch and quantity fields
+            if (prefill.batch_id) {
+                var batchEl = document.getElementById('{{ form.batch.id_for_label }}');
+                if (batchEl) batchEl.value = prefill.batch_id;
+            }
+            if (prefill.quantity) {
+                var qtyEl = document.getElementById('{{ form.quantity.id_for_label }}');
+                if (qtyEl) qtyEl.value = prefill.quantity;
+            }
+            if (prefill.reservation_id) {
+                var rEl = document.getElementById('reservation_id_input');
+                if (rEl) rEl.value = prefill.reservation_id;
+            }
+            // open modal
+            var modal = new bootstrap.Modal(document.getElementById('createTransferModal'));
+            modal.show();
+        }
+    } catch (e) {
+        console.warn('Transfer prefill failed', e);
     }
 });
 </script>

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block content %}
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <form class="px-3" method="get" action="{% url 'frontend:pharmacist_medicine_search' %}">
+            <div class="mb-2">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Search medicines" value="{{ q }}">
+            </div>
+            <div class="d-grid">
+                <button class="btn btn-sm btn-primary" type="submit">Search</button>
+            </div>
+        </form>
+        <hr />
+        <ul class="nav flex-column px-2">
+            <li class="nav-item"><a class="nav-link" href="{% url 'frontend:pharmacist_inventory' %}"><i class="fas fa-warehouse"></i> Inventory</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'frontend:pharmacist_reservations' %}"><i class="fas fa-folder"></i> My Requests</a></li>
+        </ul>
+    </div>
+</nav>
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Search Medicines</h1>
+    </div>
+
+    <div class="row">
+        {% for r in med_rows %}
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">{{ r.medicine.name }}</h5>
+                        <div class="small text-muted">{{ r.medicine.generic_name }} • Available: {{ r.available }}</div>
+                    </div>
+                    <div>
+                        {% if user.is_authenticated and user.is_pharmacist %}
+                        <button class="btn btn-sm btn-outline-primary" onclick="openPharmRequestModal({{ r.medicine.id }}, '{{ r.medicine.name|escapejs }}')">Request</button>
+                        {% endif %}
+                        <a class="btn btn-sm btn-outline-secondary ms-2" href="{% url 'frontend:medicine_availability' r.medicine.id %}">See Pharmacies</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted">No medicines found.</div>
+        {% endfor %}
+    </div>
+</main>
+
+<!-- Request modal (re-uses create_reservation_request) -->
+<div class="modal fade" id="pharmRequestModal" tabindex="-1" aria-labelledby="pharmRequestModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="pharmRequestModalLabel">Request Medicine</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="pharmRequestForm">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="hidden" id="pharm_med_id" name="medicine_id" value="">
+          <div class="mb-3">
+            <label class="form-label">Medicine</label>
+            <div id="pharm_med_name" class="fw-bold"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Manufacturer</label>
+            <select id="pharm_manufacturer_select" class="form-select"></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Quantity</label>
+            <input type="number" id="pharm_quantity" class="form-control" min="1" value="1">
+          </div>
+          <div id="pharm_error_area"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Send Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openPharmRequestModal(medId, medName) {
+    document.getElementById('pharm_med_id').value = medId;
+    document.getElementById('pharm_med_name').textContent = medName;
+    document.getElementById('pharm_error_area').innerHTML = '';
+    // fetch manufacturers that actually have available stock for this medicine
+    fetch('{% url "frontend:medicine_manufacturers" medicine_id=0 %}'.replace('/0/', '/' + medId + '/'))
+      .then(r => r.json()).then(data => {
+        var sel = document.getElementById('pharm_manufacturer_select');
+        sel.innerHTML = '';
+        if (!data.ok || !data.manufacturers.length) {
+            sel.innerHTML = '<option value="">No manufacturers available</option>';
+        } else {
+            data.manufacturers.forEach(function(m) {
+                var opt = document.createElement('option'); opt.value = m.id; opt.textContent = m.name; sel.appendChild(opt);
+            });
+        }
+        var modal = new bootstrap.Modal(document.getElementById('pharmRequestModal'));
+        modal.show();
+      }).catch(function() {
+        document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">Unable to load manufacturers</div>';
+      });
+}
+
+// handle submit
+var pharmForm = document.getElementById('pharmRequestForm');
+if (pharmForm) pharmForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var medId = document.getElementById('pharm_med_id').value;
+    var manufacturer_id = document.getElementById('pharm_manufacturer_select').value;
+    var quantity = document.getElementById('pharm_quantity').value || 1;
+    var token = document.querySelector('#pharmRequestForm input[name="csrfmiddlewaretoken"]').value;
+    if (!manufacturer_id) {
+        document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">Please select a manufacturer</div>';
+        return;
+    }
+    fetch('{% url "frontend:create_reservation_request" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': token,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams({ 'manufacturer_id': manufacturer_id, 'medicine_id': medId, 'quantity': quantity })
+  }).then(function(resp) {
+    var ct = resp.headers.get('content-type') || '';
+    if (resp.status === 400 && ct.indexOf('application/json') !== -1) {
+      return resp.json().then(function(data){ document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">'+(data.error||'Request failed')+'</div>'; });
+    }
+    if (ct.indexOf('application/json') !== -1) {
+      return resp.json().then(function(data){ if (data && data.ok) window.location.href = '{% url "frontend:pharmacist_inventory" %}'; else document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>'; });
+    }
+    if (resp.redirected) window.location = resp.url; else if (resp.ok) window.location.href = '{% url "frontend:pharmacist_inventory" %}'; else document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>';
+  }).catch(function(err){ document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>'; });
+});
+
+// Auto-open request modal when med_id and med_name are provided in the URL (inventory links will use this)
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var mid = params.get('med_id');
+    var mname = params.get('med_name');
+    var preqty = params.get('quantity');
+    if (mid && mname) {
+      if (preqty && document.getElementById('pharm_quantity')) {
+        document.getElementById('pharm_quantity').value = preqty;
+      }
+      openPharmRequestModal(mid, mname);
+    }
+  } catch (e) {
+    console.warn('Failed to pre-open request modal', e);
+  }
+});
+</script>
+{% endblock %}

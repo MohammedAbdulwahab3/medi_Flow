@@ -19,6 +19,9 @@
                     <div class="small">{{ m.strength }} • {{ m.dosage_form }}</div>
                     <p class="mt-2">{{ m.description|default:'No description'|truncatewords:20 }}</p>
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'frontend:medicine_availability' m.id %}">Check Availability</a>
+                    {% if user.is_authenticated and user.is_pharmacist %}
+                    <button class="btn btn-sm btn-outline-success ms-2" onclick="openCatalogRequestModal({{ m.id }}, '{{ m.name|escapejs }}')">Request</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -27,6 +30,95 @@
         {% endfor %}
     </div>
 </div>
+<!-- Catalog request modal -->
+<div class="modal fade" id="catalogRequestModal" tabindex="-1" aria-labelledby="catalogRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="catalogRequestModalLabel">Request Medicine</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="catalogRequestForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="medicine_id" id="catalog_medicine_id" value="">
+                    <div class="mb-3">
+                        <label class="form-label">Medicine</label>
+                        <div id="catalog_med_name" class="fw-bold"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Manufacturer</label>
+                        <select id="catalog_manufacturer_select" class="form-select"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" id="catalog_quantity" class="form-control" min="1" value="1">
+                    </div>
+                    <div id="catalog_error_area"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCatalogRequestModal(medId, medName) {
+        document.getElementById('catalog_medicine_id').value = medId;
+        document.getElementById('catalog_med_name').textContent = medName;
+        document.getElementById('catalog_error_area').innerHTML = '';
+        // fetch manufacturers
+        fetch('{% url "frontend:medicine_manufacturers" medicine_id=0 %}'.replace('/0/', '/' + medId + '/'))
+            .then(r => r.json()).then(data => {
+                var sel = document.getElementById('catalog_manufacturer_select');
+                sel.innerHTML = '';
+                if (!data.ok || !data.manufacturers.length) {
+                        sel.innerHTML = '<option value="">No manufacturers available</option>';
+                } else {
+                        data.manufacturers.forEach(function(m) {
+                                var opt = document.createElement('option'); opt.value = m.id; opt.textContent = m.name; sel.appendChild(opt);
+                        });
+                }
+                var modal = new bootstrap.Modal(document.getElementById('catalogRequestModal'));
+                modal.show();
+            }).catch(function() {
+                document.getElementById('catalog_error_area').innerHTML = '<div class="alert alert-danger">Unable to load manufacturers</div>';
+            });
+}
+
+document.getElementById('catalogRequestForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var medId = document.getElementById('catalog_medicine_id').value;
+        var manufacturer_id = document.getElementById('catalog_manufacturer_select').value;
+        var quantity = document.getElementById('catalog_quantity').value || 1;
+        var token = document.querySelector('#catalogRequestForm input[name="csrfmiddlewaretoken"]').value;
+        if (!manufacturer_id) {
+                document.getElementById('catalog_error_area').innerHTML = '<div class="alert alert-danger">Please select a manufacturer</div>';
+                return;
+        }
+        fetch('{% url "frontend:create_reservation_request" %}', {
+                method: 'POST',
+                headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({ 'manufacturer_id': manufacturer_id, 'medicine_id': medId, 'quantity': quantity })
+    }).then(function(resp) {
+        var ct = resp.headers.get('content-type') || '';
+        if (resp.status === 400 && ct.indexOf('application/json') !== -1) {
+            return resp.json().then(function(data){ document.getElementById('catalog_error_area').innerHTML = '<div class="alert alert-danger">'+(data.error||'Request failed')+'</div>'; });
+        }
+        if (ct.indexOf('application/json') !== -1) {
+            return resp.json().then(function(data){ if (data && data.ok) window.location.reload(); else document.getElementById('catalog_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>'; });
+        }
+        if (resp.redirected) window.location = resp.url; else if (resp.ok) window.location.reload(); else document.getElementById('catalog_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>';
+    }).catch(function(err){ document.getElementById('catalog_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>'; });
+});
+</script>
 {% endblock %}
 
 

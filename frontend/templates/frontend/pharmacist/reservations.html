@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">My Requests</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:pharmacist_inventory' %}">Inventory</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if requests %}
+                <ul class="list-group">
+                {% for req in requests %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ req.medicine.name }}</strong>
+                            <div class="small text-muted">Qty: {{ req.quantity }} • {{ req.created_at|date:'Y-m-d H:i' }}</div>
+                            <div class="small">Note: {{ req.note|default:'-' }}</div>
+                        </div>
+                        <div class="text-end">
+                            {% if req.status == req.STATUS_PENDING %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif req.status == req.STATUS_RESERVED %}
+                                <span class="badge bg-success">Reserved</span>
+                            {% else %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                            {% if req.note and 'transfer_id:' in req.note %}
+                                <div class="small mt-1">Transfer created — check Transfers page</div>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <div class="text-muted">You have not made any requests.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

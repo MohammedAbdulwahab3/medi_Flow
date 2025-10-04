@@ -47,3 +47,28 @@ class MedicineTransferForm(forms.ModelForm):
                 raise forms.ValidationError("Cannot transfer expired batch.")
         
         return cleaned_data
+
+
+class ReservationRequestForm(forms.Form):
+    manufacturer_id = forms.IntegerField(widget=forms.HiddenInput(), required=True)
+    medicine_id = forms.IntegerField(widget=forms.HiddenInput(), required=True)
+    quantity = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 1}))
+    note = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}))
+
+    def clean_manufacturer_id(self):
+        mid = self.cleaned_data.get('manufacturer_id')
+        from authentication_app.models import User
+        try:
+            m = User.objects.get(id=mid, role=User.ROLE_MANUFACTURER)
+        except User.DoesNotExist:
+            raise forms.ValidationError('Selected manufacturer not found')
+        return mid
+
+    def clean_medicine_id(self):
+        mid = self.cleaned_data.get('medicine_id')
+        from medicine.models import Medicine
+        try:
+            Medicine.objects.get(id=mid)
+        except Medicine.DoesNotExist:
+            raise forms.ValidationError('Selected medicine not found')
+        return mid
