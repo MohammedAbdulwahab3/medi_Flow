@@ -4,7 +4,7 @@ from .models import Medicine, MedicineBatch
 class MedicineForm(forms.ModelForm):
     class Meta:
         model = Medicine
-        fields = ['name', 'generic_name', 'strength', 'dosage_form', 'description']
+        fields = ['name', 'generic_name', 'strength', 'dosage_form', 'category', 'description', 'image']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Medicine name'}),
             'generic_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Generic name'}),
@@ -21,7 +21,9 @@ class MedicineForm(forms.ModelForm):
                 ('inhaler', 'Inhaler'),
                 ('other', 'Other')
             ]),
+            'category': forms.Select(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
+            'image': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Image URL (e.g., https://example.com/image.jpg)'}),
         }
 
 

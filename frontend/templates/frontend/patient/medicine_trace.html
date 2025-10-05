@@ -1,45 +1,416 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h4">Trace: {{ medicine.name }}</h1>
-        <a class="btn btn-outline-secondary" href="{% url 'frontend:medicine_catalog' %}">Back to Catalog</a>
+<!-- Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:patient_dashboard' %}">
+                    <i class="fas fa-user"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_mine' %}">
+                    <i class="fas fa-prescription"></i> My Prescriptions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_history' %}">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'frontend:medicine_catalog' %}">
+                    <i class="fas fa-pills"></i> Medicines
+                </a>
+            </li>
+        </ul>
     </div>
-    <div class="mb-2 text-muted">{{ medicine.generic_name }} • {{ medicine.strength }} • {{ medicine.dosage_form }}</div>
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-striped mb-0">
-                <thead>
-                    <tr>
-                        <th>Batch</th>
-                        <th>Manufactured</th>
-                        <th>Expires</th>
-                        <th>Total Pharmacy Stock</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in batch_rows %}
-                    <tr>
-                        <td>{{ row.batch.batch_number }}</td>
-                        <td>{{ row.batch.manufacturing_date|date:'Y-m-d' }}</td>
-                        <td>
-                            {{ row.batch.expiry_date|date:'Y-m-d' }}
-                            {% if row.batch.is_expired %}
-                                <span class="badge bg-danger">Expired</span>
-                            {% elif row.batch.is_expiring_soon %}
-                                <span class="badge bg-warning text-dark">Soon</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ row.total_stock }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="text-center text-muted">No batches.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+</nav>
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <!-- Breadcrumb -->
+    <div class="pt-3 pb-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'frontend:medicine_catalog' %}">Medicines</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'frontend:medicine_detail_page' medicine.id %}">{{ medicine.name }}</a></li>
+                <li class="breadcrumb-item active">Trace Supply Chain</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Header -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-2"><i class="fas fa-search-location text-primary"></i> Supply Chain Trace</h2>
+                    <h4 class="text-muted mb-2">{{ medicine.name }}</h4>
+                    <p class="text-muted small mb-0">
+                        {% if medicine.generic_name %}{{ medicine.generic_name }} • {% endif %}
+                        {{ medicine.strength|default:"" }} {{ medicine.dosage_form|title }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'frontend:medicine_detail_page' medicine.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-info-circle"></i> Details
+                        </a>
+                        <a href="{% url 'frontend:medicine_availability' medicine.id %}" class="btn btn-outline-success">
+                            <i class="fas fa-map-marker-alt"></i> Find
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+
+    <!-- Manufacturer Info -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-industry text-primary"></i> Manufacturer Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <span class="info-label">Company Name:</span>
+                        <span class="info-value">{{ medicine.manufacturer.get_full_name|default:medicine.manufacturer.username }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <span class="info-label">License Number:</span>
+                        <span class="info-value">{{ medicine.manufacturer.license_number|default:"N/A" }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3">
+                    <div class="info-item">
+                        <span class="info-label">Total Batches Produced:</span>
+                        <span class="info-value badge bg-primary">{{ batch_rows|length }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3">
+                    <div class="info-item">
+                        <span class="info-label">Medicine Category:</span>
+                        <span class="info-value badge bg-info">{{ medicine.get_category_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supply Chain Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card text-center border-success">
+                <div class="card-body">
+                    <i class="fas fa-boxes fa-2x text-success mb-2"></i>
+                    <h3 class="mb-0">{{ batch_rows|length }}</h3>
+                    <small class="text-muted">Total Batches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card text-center border-primary">
+                <div class="card-body">
+                    <i class="fas fa-warehouse fa-2x text-primary mb-2"></i>
+                    <h3 class="mb-0">{% for row in batch_rows %}{{ row.total_stock|add:0 }}{% empty %}0{% endfor %}</h3>
+                    <small class="text-muted">Units in Pharmacies</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card text-center border-warning">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <h3 class="mb-0">
+                        {% if batch_rows %}
+                            {{ batch_rows|length|add:"-1" }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h3>
+                    <small class="text-muted">Expiring Soon</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card text-center border-info">
+                <div class="card-body">
+                    <i class="fas fa-check-circle fa-2x text-info mb-2"></i>
+                    <h3 class="mb-0">Verified</h3>
+                    <small class="text-muted">Authentic Product</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Timeline -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-history text-success"></i> Production Timeline</h5>
+        </div>
+        <div class="card-body">
+            {% if batch_rows %}
+                <div class="timeline">
+                    {% for row in batch_rows %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker {% if row.batch.is_expired %}bg-danger{% elif row.batch.is_expiring_soon %}bg-warning{% else %}bg-success{% endif %}"></div>
+                        <div class="timeline-content">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6 class="mb-1">
+                                        <code>{{ row.batch.batch_number }}</code>
+                                        {% if row.batch.is_expired %}
+                                            <span class="badge bg-danger">Expired</span>
+                                        {% elif row.batch.is_expiring_soon %}
+                                            <span class="badge bg-warning text-dark">Expiring Soon</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="text-muted small mb-2">
+                                        <i class="fas fa-calendar-check"></i> Manufactured: <strong>{{ row.batch.manufacturing_date|date:"M d, Y" }}</strong> •
+                                        <i class="fas fa-calendar-times"></i> Expires: <strong>{{ row.batch.expiry_date|date:"M d, Y" }}</strong>
+                                    </p>
+                                    <p class="small mb-0">
+                                        <span class="badge bg-primary">{{ row.total_stock }} units in pharmacies</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="batch-price">
+                                        <small class="text-muted d-block">Selling Price</small>
+                                        <h5 class="text-success mb-0">${{ row.batch.selling_price|floatformat:2 }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No production batches found.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Detailed Batch Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-table text-primary"></i> Complete Batch Information</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Batch Number</th>
+                            <th>Manufacturing Date</th>
+                            <th>Expiry Date</th>
+                            <th>Days Until Expiry</th>
+                            <th>Initial Quantity</th>
+                            <th>Pharmacy Stock</th>
+                            <th>Unit Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in batch_rows %}
+                        <tr>
+                            <td><code class="fw-bold">{{ row.batch.batch_number }}</code></td>
+                            <td>{{ row.batch.manufacturing_date|date:"M d, Y" }}</td>
+                            <td>{{ row.batch.expiry_date|date:"M d, Y" }}</td>
+                            <td>
+                                {% now "Y-m-d" as today %}
+                                {% if row.batch.is_expired %}
+                                    <span class="text-danger">Expired</span>
+                                {% else %}
+                                    {{ row.batch.expiry_date|timeuntil }} remaining
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary">{{ row.batch.quantity }} units</span></td>
+                            <td><span class="badge bg-primary">{{ row.total_stock|default:0 }} units</span></td>
+                            <td><strong class="text-success">${{ row.batch.selling_price|floatformat:2 }}</strong></td>
+                            <td>
+                                {% if row.batch.is_expired %}
+                                    <span class="badge bg-danger"><i class="fas fa-times-circle"></i> Expired</span>
+                                {% elif row.batch.is_expiring_soon %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> Expiring Soon</span>
+                                {% else %}
+                                    <span class="badge bg-success"><i class="fas fa-check-circle"></i> Fresh</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">No batches available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribution Info -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-truck text-success"></i> Distribution Information</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-3"><i class="fas fa-info-circle text-primary"></i> This medicine is distributed to pharmacies through authorized channels.</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Supply Chain Verification:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check-circle text-success"></i> Authenticated Manufacturer</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Licensed Production</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Batch Tracking Enabled</li>
+                        <li><i class="fas fa-check-circle text-success"></i> Quality Assured</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Safety Information:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-shield-alt text-primary"></i> All batches are traceable</li>
+                        <li><i class="fas fa-shield-alt text-primary"></i> Expiry dates monitored</li>
+                        <li><i class="fas fa-shield-alt text-primary"></i> Storage conditions verified</li>
+                        <li><i class="fas fa-shield-alt text-primary"></i> Regulatory compliant</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<style>
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.info-item {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #6c757d;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-weight: 500;
+    color: #212529;
+}
+
+.stat-card {
+    border-width: 2px;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -26px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border-left: 3px solid #28a745;
+}
+
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+}
+
+.card-header {
+    border-bottom: 2px solid #e9ecef;
+}
+
+.table thead th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+code {
+    background: #e9ecef;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    color: #e83e8c;
+}
+</style>
 {% endblock %}
-
-

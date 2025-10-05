@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Prescription, PatientMedicalRecord, PatientHistoryEntry
+from .models import (
+    Prescription, PatientMedicalRecord, PatientHistoryEntry,
+    DoctorProfile, PatientDoctorAssignment, Message, Notification
+)
 
 @admin.register(Prescription)
 class PrescriptionAdmin(admin.ModelAdmin):
@@ -33,3 +36,36 @@ class PatientHistoryEntryAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Prevent deleting existing entries via admin
         return False
+
+
+@admin.register(DoctorProfile)
+class DoctorProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'specialization', 'years_of_experience', 'consultation_fee')
+    search_fields = ('user__username', 'user__full_name', 'specialization')
+    list_filter = ('specialization',)
+
+
+@admin.register(PatientDoctorAssignment)
+class PatientDoctorAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('patient', 'doctor', 'assigned_date', 'is_primary')
+    list_filter = ('is_primary', 'assigned_date')
+    search_fields = ('patient__username', 'doctor__username')
+    date_hierarchy = 'assigned_date'
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('sender', 'recipient', 'subject', 'sent_at', 'is_read')
+    list_filter = ('is_read', 'sent_at')
+    search_fields = ('sender__username', 'recipient__username', 'subject', 'body')
+    date_hierarchy = 'sent_at'
+    readonly_fields = ('sent_at',)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'notification_type', 'title', 'created_at', 'is_read')
+    list_filter = ('notification_type', 'is_read', 'created_at')
+    search_fields = ('user__username', 'title', 'message')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at',)

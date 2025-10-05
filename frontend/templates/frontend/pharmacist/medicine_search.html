@@ -1,48 +1,128 @@
 {% extends "base.html" %}
-{% block content %}
-<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
-    <div class="position-sticky pt-3">
-        <form class="px-3" method="get" action="{% url 'frontend:pharmacist_medicine_search' %}">
-            <div class="mb-2">
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Search medicines" value="{{ q }}">
-            </div>
-            <div class="d-grid">
-                <button class="btn btn-sm btn-primary" type="submit">Search</button>
-            </div>
-        </form>
-        <hr />
-        <ul class="nav flex-column px-2">
-            <li class="nav-item"><a class="nav-link" href="{% url 'frontend:pharmacist_inventory' %}"><i class="fas fa-warehouse"></i> Inventory</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'frontend:pharmacist_reservations' %}"><i class="fas fa-folder"></i> My Requests</a></li>
-        </ul>
-    </div>
-</nav>
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Search Medicines</h1>
-    </div>
+{% load static %}
 
-    <div class="row">
-        {% for r in med_rows %}
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-0">{{ r.medicine.name }}</h5>
-                        <div class="small text-muted">{{ r.medicine.generic_name }} • Available: {{ r.available }}</div>
-                    </div>
-                    <div>
-                        {% if user.is_authenticated and user.is_pharmacist %}
-                        <button class="btn btn-sm btn-outline-primary" onclick="openPharmRequestModal({{ r.medicine.id }}, '{{ r.medicine.name|escapejs }}')">Request</button>
-                        {% endif %}
-                        <a class="btn btn-sm btn-outline-secondary ms-2" href="{% url 'frontend:medicine_availability' r.medicine.id %}">See Pharmacies</a>
-                    </div>
-                </div>
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="container-fluid mt-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2><i class="fas fa-search"></i> Medicine Search</h2>
+                <p class="text-muted">Search and request medicines from manufacturers</p>
             </div>
         </div>
-        {% empty %}
-        <div class="col-12 text-center text-muted">No medicines found.</div>
-        {% endfor %}
+
+        <!-- Search Box -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <form method="get" action="{% url 'frontend:pharmacist_medicine_search' %}">
+                    <div class="row">
+                        <div class="col-md-10">
+                            <input type="text" name="q" class="form-control form-control-lg" 
+                                   placeholder="Search by medicine name or generic name..." 
+                                   value="{{ q }}" autofocus>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Medicine Results -->
+        {% if med_rows %}
+            <!-- Show count and search info -->
+            {% if q %}
+            <div class="alert alert-success mb-3">
+                <i class="fas fa-check-circle"></i> Found <strong>{{ med_rows|length }}</strong> medicine(s) matching "{{ q }}"
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i> Showing first <strong>{{ med_rows|length }}</strong> medicines. Use search to find specific medicines.
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                {% for r in med_rows %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <!-- Medicine Image -->
+                        {% if r.medicine.image %}
+                        <img src="{{ r.medicine.image.url }}" class="card-img-top" alt="{{ r.medicine.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="fas fa-pills fa-4x text-muted"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ r.medicine.name }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">{{ r.medicine.generic_name }}</small><br>
+                                <small class="text-muted">{{ r.medicine.strength }} - {{ r.medicine.dosage_form }}</small>
+                            </p>
+                            
+                            <!-- Manufacturer Info -->
+                            <div class="mb-2">
+                                <i class="fas fa-industry text-primary"></i> 
+                                <strong>{{ r.medicine.manufacturer.full_name|default:r.medicine.manufacturer.username }}</strong>
+                            </div>
+                            
+                            <!-- Price Range -->
+                            {% if r.min_price %}
+                            <div class="mb-2">
+                                <i class="fas fa-tag text-success"></i> 
+                                <strong>${{ r.min_price }}</strong>
+                                {% if r.max_price and r.max_price != r.min_price %}
+                                - <strong>${{ r.max_price }}</strong>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Availability -->
+                            <div class="mb-3">
+                                <span class="badge {% if r.available > 0 %}badge-success{% else %}badge-danger{% endif %}">
+                                    {% if r.available > 0 %}
+                                    <i class="fas fa-check"></i> {{ r.available }} units available
+                                    {% else %}
+                                    <i class="fas fa-times"></i> Out of Stock
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="openPharmRequestModal({{ r.medicine.id }}, '{{ r.medicine.name|escapejs }}')">
+                                    <i class="fas fa-shopping-cart"></i> Request from Manufacturer
+                                </button>
+                                <a class="btn btn-outline-secondary" href="{% url 'frontend:pharmacist_medicine_detail' r.medicine.id %}">
+                                    <i class="fas fa-info-circle"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% if q %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                <strong>No medicines found</strong> for "{{ q }}". Try a different search term.
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                <strong>No medicines available</strong> in the system. Please contact your administrator.
+            </div>
+            {% endif %}
+        {% endif %}
     </div>
 </main>
 

@@ -1,7 +1,10 @@
 from django import forms
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from .models import Prescription, PatientHistoryEntry
+from .models import (
+    Prescription, PatientHistoryEntry, DoctorProfile, 
+    PatientDoctorAssignment, Message, Notification
+)
 from inventory.models import PharmacyInventory
 from medicine.models import Medicine
 
@@ -89,3 +92,73 @@ class DoctorHistoryEntryForm(forms.ModelForm):
         }
 
 
+class DoctorProfileForm(forms.ModelForm):
+    class Meta:
+        model = DoctorProfile
+        fields = ['specialization', 'qualifications', 'e_signature', 'years_of_experience', 
+                  'consultation_fee', 'available_days', 'available_hours']
+        widgets = {
+            'specialization': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Cardiology'}),
+            'qualifications': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'e.g., MD, MBBS, Board Certified'}),
+            'e_signature': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Your digital signature'}),
+            'years_of_experience': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'consultation_fee': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'available_days': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Mon-Fri'}),
+            'available_hours': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 9:00 AM - 5:00 PM'}),
+        }
+
+
+class MessageForm(forms.ModelForm):
+    class Meta:
+        model = Message
+        fields = ['recipient', 'subject', 'body']
+        widgets = {
+            'recipient': forms.Select(attrs={'class': 'form-control'}),
+            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Message subject'}),
+            'body': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Your message'}),
+        }
+
+    def __init__(self, sender=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if sender:
+            # If sender is a doctor, show their patients
+            if sender.is_doctor:
+                # Get patients from prescriptions or assignments
+                patient_ids = Prescription.objects.filter(doctor=sender).values_list('patient_id', flat=True).distinct()
+                assigned_patient_ids = PatientDoctorAssignment.objects.filter(doctor=sender).values_list('patient_id', flat=True).distinct()
+                all_patient_ids = set(list(patient_ids) + list(assigned_patient_ids))
+                self.fields['recipient'].queryset = User.objects.filter(id__in=all_patient_ids, role=User.ROLE_PATIENT)
+            # If sender is a patient, show their doctors
+            elif sender.is_patient:
+                doctor_ids = Prescription.objects.filter(patient=sender).values_list('doctor_id', flat=True).distinct()
+                assigned_doctor_ids = PatientDoctorAssignment.objects.filter(patient=sender).values_list('doctor_id', flat=True).distinct()
+                all_doctor_ids = set(list(doctor_ids) + list(assigned_doctor_ids))
+                self.fields['recipient'].queryset = User.objects.filter(id__in=all_doctor_ids, role=User.ROLE_DOCTOR)
+            else:
+                self.fields['recipient'].queryset = User.objects.none()
+
+
+class MessageReplyForm(forms.ModelForm):
+    class Meta:
+        model = Message
+        fields = ['body']
+        widgets = {
+            'body': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Your reply'}),
+        }
+
+
+class PatientDoctorAssignmentForm(forms.ModelForm):
+    class Meta:
+        model = PatientDoctorAssignment
+        fields = ['patient', 'doctor', 'is_primary', 'notes']
+        widgets = {
+            'patient': forms.Select(attrs={'class': 'form-control'}),
+            'doctor': forms.Select(attrs={'class': 'form-control'}),
+            'is_primary': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['patient'].queryset = User.objects.filter(role=User.ROLE_PATIENT)
+        self.fields['doctor'].queryset = User.objects.filter(role=User.ROLE_DOCTOR)

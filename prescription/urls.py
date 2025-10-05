@@ -13,4 +13,21 @@ urlpatterns = [
     path('patient/mine/', views.patient_my_prescriptions, name='patient_mine'),
     path('patient/history/', views.patient_history, name='patient_history'),
     path('patient/trace/<int:pk>/', views.patient_trace_prescription, name='patient_trace'),
+    
+    # Doctor Profile
+    path('doctor/profile/edit/', views.doctor_profile_edit, name='doctor_profile_edit'),
+    
+    # Messaging
+    path('messages/', views.message_inbox, name='message_inbox'),
+    path('messages/compose/', views.message_compose, name='message_compose'),
+    path('messages/<int:message_id>/', views.message_detail, name='message_detail'),
+    
+    # Notifications
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:notification_id>/read/', views.notification_mark_read, name='notification_mark_read'),
+    path('notifications/read-all/', views.notification_mark_all_read, name='notification_mark_all_read'),
+    path('api/unread-counts/', views.get_unread_counts, name='get_unread_counts'),
+    
+    # Doctor-Patient Assignment
+    path('doctor/assign-patients/', views.assign_doctor_to_patient, name='assign_doctor_to_patient'),
 ]

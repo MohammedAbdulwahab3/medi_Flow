@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-bell"></i> Notifications</h1>
+                {% if unread_count > 0 %}
+                <a href="{% url 'prescription:notification_mark_all_read' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-check-double"></i> Mark All as Read
+                </a>
+                {% endif %}
+            </div>
+
+            {% if notifications %}
+                <div class="list-group">
+                    {% for notification in notifications %}
+                    <div class="list-group-item {% if not notification.is_read %}list-group-item-primary{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <h6 class="mb-0 me-2">
+                                        {% if notification.notification_type == 'prescription_created' %}
+                                            <i class="fas fa-prescription text-primary"></i>
+                                        {% elif notification.notification_type == 'prescription_dispensed' %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% elif notification.notification_type == 'message_received' %}
+                                            <i class="fas fa-envelope text-info"></i>
+                                        {% elif notification.notification_type == 'doctor_assigned' %}
+                                            <i class="fas fa-user-md text-warning"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-secondary"></i>
+                                        {% endif %}
+                                        {{ notification.title }}
+                                    </h6>
+                                    {% if not notification.is_read %}
+                                        <span class="badge bg-primary">New</span>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-1">{{ notification.message }}</p>
+                                <small class="text-muted">{{ notification.created_at|date:"M d, Y h:i A" }}</small>
+                                
+                                <!-- Quick Actions -->
+                                <div class="mt-2">
+                                    {% if notification.related_prescription %}
+                                        {% if request.user.is_patient %}
+                                            <a href="{% url 'prescription:patient_mine' %}" class="btn btn-sm btn-outline-primary">
+                                                View Prescription
+                                            </a>
+                                        {% elif request.user.is_doctor %}
+                                            <a href="{% url 'prescription:doctor_list' %}" class="btn btn-sm btn-outline-primary">
+                                                View Prescription
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if notification.related_message %}
+                                        <a href="{% url 'prescription:message_detail' notification.related_message.id %}" class="btn btn-sm btn-outline-info">
+                                            View Message
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if not notification.is_read %}
+                                        <a href="{% url 'prescription:notification_mark_read' notification.id %}" class="btn btn-sm btn-outline-secondary">
+                                            Mark as Read
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-bell-slash"></i> No notifications yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,161 +1,337 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pharmacist Dashboard - Enhanced{% endblock %}
+
 {% block content %}
-<!-- Sidebar -->
-<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
-    <div class="position-sticky pt-3">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link active" href="#">
-                    <i class="fas fa-pills"></i> Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'prescription:pharmacist_queue' %}">
-                    <i class="fas fa-prescription"></i> Prescriptions
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'frontend:pharmacist_location_settings' %}">
-                    <i class="fas fa-map-marker-alt"></i> Location
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'frontend:pharmacist_inventory' %}">
-                    <i class="fas fa-warehouse"></i> Inventory
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'frontend:pharmacist_medicine_search' %}">
-                    <i class="fas fa-search"></i> Search Medicines
-                </a>
-            </li>
-          
-        </ul>
-    </div>
-</nav>
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
 
 <!-- Main content -->
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Pharmacist Dashboard</h1>
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-tachometer-alt"></i> Pharmacy Dashboard</h2>
+            <p class="text-muted">Real-time pharmacy management and analytics</p>
+        </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="m-0"><i class="fas fa-truck"></i> Incoming Transfers</h5>
-                        <a class="btn btn-sm btn-outline-primary" href="{% url 'frontend:pharmacist_transfers' %}">View All</a>
-                    </div>
-                </div>
+    <!-- Main Dashboard Cards - 4 Combined Cards -->
+    <div class="row mb-4">
+        <!-- Card 1: Sales & Revenue -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-primary shadow h-100">
                 <div class="card-body">
-                    {% if incoming_transfers %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Medicine</th>
-                                        <th>From</th>
-                                        <th>Quantity</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for transfer in incoming_transfers %}
-                                    <tr>
-                                        <td>{{ transfer.batch.medicine.name }}</td>
-                                        <td>{{ transfer.from_user.username }}</td>
-                                        <td>{{ transfer.quantity }}</td>
-                                        <td>{{ transfer.transfer_date|date:"M d, Y" }}</td>
-                                        <td>
-                                            {% if transfer.is_completed %}
-                                                <span class="badge bg-success">Completed</span>
-                                            {% else %}
-                                                <span class="badge bg-warning">Pending</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No incoming transfers found.</p>
-                    {% endif %}
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-2">Today's Sales</div>
+                    <div class="h4 mb-2 font-weight-bold text-gray-800">${{ today_revenue }}</div>
+                    <div class="mb-2">
+                        <span class="badge badge-success">{{ today_transactions }} transactions</span>
+                    </div>
+                    <small class="{% if revenue_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        <i class="fas fa-arrow-{% if revenue_change >= 0 %}up{% else %}down{% endif %}"></i> 
+                        {{ revenue_change_abs }}%
+                    </small>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="m-0"><i class="fas fa-warehouse"></i> Low Stock & Expiry</h5>
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'frontend:pharmacist_inventory' %}">Inventory</a>
+
+        <!-- Card 2: Profit & Margin -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-success shadow h-100">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-2">Today's Profit</div>
+                    <div class="h4 mb-2 font-weight-bold text-gray-800">${{ today_profit }}</div>
+                    <div>
+                        <small class="text-muted">Inventory: ${{ inventory_value }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Stock Alerts -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-warning shadow h-100">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-2">Stock Alerts</div>
+                    <div class="h4 mb-2 font-weight-bold text-gray-800">{{ low_stock_count }}</div>
+                    <div class="mb-1">
+                        <span class="badge badge-danger">{{ expiring_count }} expiring soon</span>
+                    </div>
+                    <small class="text-muted">{{ expired_items }} expired</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Total Stock -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-info shadow h-100">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-2">Total Stock</div>
+                    <div class="h4 mb-2 font-weight-bold text-gray-800">{{ total_stock_units }}</div>
+                    <div class="mb-1">
+                        <span class="badge badge-info">{{ total_inventory_items }} items</span>
+                    </div>
+                    <small class="text-muted">{{ pending_reorder_count }} reorders pending</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8 mb-4">
+            <!-- Low Stock Items -->
+            <div class="card shadow mb-4" id="low-stock">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Low Stock Items
+                    </h6>
+                    <a href="{% url 'frontend:reorder_management' %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-plus"></i> Manage Reorders
+                    </a>
                 </div>
                 <div class="card-body">
                     {% if low_stock_items %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Medicine</th>
-                                        <th>Stock</th>
-                                        <th>Min</th>
-                                        <th>Expires</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in low_stock_items %}
-                                    <tr>
-                                        <td>{{ item.batch.medicine.name }}</td>
-                                        <td>{{ item.current_stock }}</td>
-                                        <td>{{ item.minimum_stock_level }}</td>
-                                        <td>
-                                            {{ item.batch.expiry_date|date:'Y-m-d' }}
-                                            {% if item.batch.is_expired %}
-                                                <span class="badge bg-danger">Expired</span>
-                                            {% elif item.batch.is_expiring_soon %}
-                                                <span class="badge bg-warning text-dark">Soon</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Medicine</th>
+                                    <th>Batch</th>
+                                    <th class="text-center">Stock</th>
+                                    <th>Manufacturer</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.batch.medicine.name }}</strong><br>
+                                        <small class="text-muted">{{ item.batch.medicine.strength }}</small>
+                                    </td>
+                                    <td><small>{{ item.batch.batch_number }}</small></td>
+                                    <td class="text-center">
+                                        <span class="badge {% if item.current_stock <= 5 %}badge-danger{% else %}badge-warning{% endif %}">
+                                            {{ item.current_stock }} units
+                                        </span>
+                                    </td>
+                                    <td><small>{{ item.batch.medicine.manufacturer.username }}</small></td>
+                                    <td class="text-right">
+                                        <a href="{% url 'frontend:pharmacist_medicine_search' %}?q={{ item.batch.medicine.name }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-shopping-cart"></i> Reorder
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
-                        <p class="text-muted">All items are well stocked.</p>
+                    <p class="text-muted text-center">No low stock items. Great job!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Sales -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-shopping-bag"></i> Recent Sales
+                    </h6>
+                    <a href="{% url 'frontend:sales_analytics' %}" class="btn btn-sm btn-success">View Analytics</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_sales %}
+                    <div class="list-group">
+                        {% for sale in recent_sales %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Sale #{{ sale.id }}</strong><br>
+                                    <small class="text-muted">
+                                        {{ sale.patient.full_name|default:"Walk-in" }} - 
+                                        {{ sale.sale_date|date:"M d, Y H:i" }}
+                                    </small>
+                                </div>
+                                <div class="text-right">
+                                    <h6 class="mb-0 text-success">${{ sale.total_amount }}</h6>
+                                    <small class="text-muted">{{ sale.get_payment_method_display }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent sales.</p>
                     {% endif %}
                 </div>
             </div>
         </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4 mb-4">
+            <!-- Expiring Soon -->
+            <div class="card shadow mb-4" id="expiring">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">
+                        <i class="fas fa-clock"></i> Expiring Soon
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if expiring_soon %}
+                    <div class="list-group list-group-flush">
+                        {% for item in expiring_soon %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ item.batch.medicine.name }}</strong><br>
+                                    <small class="text-muted">
+                                        Batch: {{ item.batch.batch_number }}<br>
+                                        Stock: {{ item.current_stock }} units
+                                    </small>
+                                </div>
+                                <div class="text-right">
+                                    <span class="badge {% if item.batch.expiry_date|timeuntil < '7 days' %}badge-danger{% else %}badge-warning{% endif %}">
+                                        {{ item.batch.expiry_date|date:"M d" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No items expiring soon.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Reorder Alerts -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-secondary">
+                        <i class="fas fa-redo"></i> Reorder Alerts
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if pending_reorder_alerts %}
+                    <div class="list-group list-group-flush">
+                        {% for alert in pending_reorder_alerts %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong>{{ alert.pharmacy_inventory.batch.medicine.name }}</strong><br>
+                                    <small class="text-muted">
+                                        Stock: {{ alert.pharmacy_inventory.current_stock }} units<br>
+                                        Suggested: {{ alert.suggested_quantity }} units
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <a href="{% url 'frontend:create_reorder_request' alert.id %}" 
+                                   class="btn btn-success">
+                                    <i class="fas fa-check"></i> Order
+                                </a>
+                                <a href="{% url 'frontend:dismiss_reorder_alert' alert.id %}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Dismiss
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No pending reorder alerts.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'frontend:prescription_queue' %}" class="btn btn-info btn-block mb-2">
+                            <i class="fas fa-prescription"></i> Prescription Queue
+                        </a>
+                        <a href="{% url 'frontend:sales_analytics' %}" class="btn btn-success btn-block mb-2">
+                            <i class="fas fa-chart-bar"></i> Sales Analytics
+                        </a>
+                        <a href="{% url 'frontend:pharmacist_inventory' %}" class="btn btn-primary btn-block mb-2">
+                            <i class="fas fa-boxes"></i> Manage Inventory
+                        </a>
+                        <a href="{% url 'frontend:reorder_management' %}" class="btn btn-warning btn-block mb-2">
+                            <i class="fas fa-redo"></i> Reorder Management
+                        </a>
+                        <a href="{% url 'frontend:pharmacist_transfers' %}" class="btn btn-secondary btn-block">
+                            <i class="fas fa-exchange-alt"></i> View Transfers
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incoming Transfers -->
+            {% if incoming_transfers %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-truck"></i> Incoming Transfers
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for transfer in incoming_transfers %}
+                        <div class="list-group-item px-0">
+                            <strong>{{ transfer.batch.medicine.name }}</strong><br>
+                            <small class="text-muted">
+                                {{ transfer.quantity }} units from {{ transfer.from_user.username }}<br>
+                                {{ transfer.transfer_date|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'frontend:pharmacist_transfers' %}" class="btn btn-sm btn-primary btn-block mt-2">
+                        View All Transfers
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
     </div>
+</div>
 </main>
 
 <style>
-.sidebar .nav-link {
-    font-weight: 500;
-    color: #333;
-    padding: 0.75rem 1rem;
-    border-radius: 0.25rem;
-    margin: 0.125rem 0.5rem;
+.border-left-primary {
+    border-left: 4px solid #4e73df!important;
 }
-
-.sidebar .nav-link:hover {
-    color: #007bff;
-    background-color: #f8f9fa;
+.border-left-success {
+    border-left: 4px solid #1cc88a!important;
 }
-
-.sidebar .nav-link.active {
-    color: #007bff;
-    background-color: #e3f2fd;
+.border-left-info {
+    border-left: 4px solid #36b9cc!important;
 }
-
-.card {
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    border: none;
-    border-radius: 0.35rem;
+.border-left-warning {
+    border-left: 4px solid #f6c23e!important;
+}
+.opacity-50 {
+    opacity: 0.5;
+}
+.stretched-link::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    content: "";
 }
 </style>
 {% endblock %}

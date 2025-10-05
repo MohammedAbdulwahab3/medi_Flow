@@ -84,3 +84,20 @@ class PharmacistProfile(models.Model):
 
     def __str__(self):
         return self.pharmacy_name or f"Pharmacy of {self.user.username}"
+
+
+class ManufacturerProfile(models.Model):
+    """Basic manufacturer/company profile."""
+    user = models.OneToOneField('authentication_app.User', on_delete=models.CASCADE, related_name='manufacturer_profile')
+    company_name = models.CharField(max_length=255, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    website = models.URLField(blank=True)
+    contact_email = models.EmailField(blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        display = self.company_name or self.user.get_full_name() or self.user.username
+        return f"Manufacturer: {display}"

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Sum, F
-from django.db.models import Sum
+from django.db import transaction
 from django import forms
 from datetime import date, timedelta
 
@@ -27,19 +27,187 @@ def home(request):
 
 @login_required
 def patient_dashboard(request):
-    return render(request, 'frontend/patient/patient_dashboard.html')
+    from prescription.models import Prescription, PatientDoctorAssignment, Notification
+    
+    # Get recent prescriptions
+    recent_prescriptions = Prescription.objects.filter(
+        patient=request.user
+    ).select_related('doctor', 'medicine').order_by('-prescribed_date')[:5]
+    
+    # Get assigned doctors
+    assigned_doctors = PatientDoctorAssignment.objects.filter(
+        patient=request.user
+    ).select_related('doctor', 'doctor__doctor_profile').order_by('-is_primary', '-assigned_date')
+    
+    # Get unread notifications
+    unread_notifications = Notification.objects.filter(
+        user=request.user, is_read=False
+    ).order_by('-created_at')[:5]
+    
+    # Statistics
+    total_prescriptions = Prescription.objects.filter(patient=request.user).count()
+    pending_prescriptions = Prescription.objects.filter(patient=request.user, status='pending').count()
+    dispensed_prescriptions = Prescription.objects.filter(patient=request.user, status='dispensed').count()
+    
+    context = {
+        'recent_prescriptions': recent_prescriptions,
+        'assigned_doctors': assigned_doctors,
+        'unread_notifications': unread_notifications,
+        'total_prescriptions': total_prescriptions,
+        'pending_prescriptions': pending_prescriptions,
+        'dispensed_prescriptions': dispensed_prescriptions,
+    }
+    
+    return render(request, 'frontend/patient/patient_dashboard.html', context)
 
 
 @login_required
 def doctor_dashboard(request):
-    return render(request, 'frontend/doctor/doctor_dashboard.html')
+    from prescription.models import Prescription, PatientDoctorAssignment, DoctorProfile, Notification
+    from django.db.models import Count
+    
+    # Get or create doctor profile
+    doctor_profile, _ = DoctorProfile.objects.get_or_create(user=request.user)
+    
+    # Get assigned patients
+    assigned_patients = PatientDoctorAssignment.objects.filter(
+        doctor=request.user
+    ).select_related('patient').order_by('-is_primary', '-assigned_date')[:10]
+    
+    # Get recent prescriptions
+    recent_prescriptions = Prescription.objects.filter(
+        doctor=request.user
+    ).select_related('patient', 'medicine').order_by('-prescribed_date')[:10]
+    
+    # Get unread notifications
+    unread_notifications = Notification.objects.filter(
+        user=request.user, is_read=False
+    ).order_by('-created_at')[:5]
+    
+    # Statistics
+    total_patients = PatientDoctorAssignment.objects.filter(doctor=request.user).count()
+    total_prescriptions = Prescription.objects.filter(doctor=request.user).count()
+    pending_prescriptions = Prescription.objects.filter(doctor=request.user, status='pending').count()
+    dispensed_prescriptions = Prescription.objects.filter(doctor=request.user, status='dispensed').count()
+    
+    context = {
+        'doctor_profile': doctor_profile,
+        'assigned_patients': assigned_patients,
+        'recent_prescriptions': recent_prescriptions,
+        'unread_notifications': unread_notifications,
+        'total_patients': total_patients,
+        'total_prescriptions': total_prescriptions,
+        'pending_prescriptions': pending_prescriptions,
+        'dispensed_prescriptions': dispensed_prescriptions,
+    }
+    
+    return render(request, 'frontend/doctor/doctor_dashboard.html', context)
 
 
 @login_required
 def pharmacist_dashboard(request):
+    from datetime import date, timedelta
+    from django.db.models import Sum, Count, Q
+    
     user = request.user
-    # lightweight placeholder; full implementation appears later in file
-    return render(request, 'frontend/pharmacist/pharmacist_dashboard.html')
+    if not user.is_pharmacist:
+        return redirect('frontend:home')
+    
+    # Get today and date ranges
+    today = date.today()
+    thirty_days = today + timedelta(days=30)
+    seven_days = today + timedelta(days=7)
+    
+    # === INVENTORY STATISTICS ===
+    my_inventory = PharmacyInventory.objects.filter(pharmacist=user).select_related('batch__medicine')
+    total_items = my_inventory.count()
+    total_stock = my_inventory.aggregate(total=Sum('current_stock'))['total'] or 0
+    
+    # Low stock items (less than 10 units)
+    low_stock_items = my_inventory.filter(current_stock__lt=10).order_by('current_stock')[:10]
+    low_stock_count = my_inventory.filter(current_stock__lt=10).count()
+    
+    # Expiring items
+    expiring_soon = my_inventory.filter(
+        batch__expiry_date__lte=thirty_days,
+        batch__expiry_date__gt=today
+    ).order_by('batch__expiry_date')[:10]
+    expiring_count = my_inventory.filter(
+        batch__expiry_date__lte=thirty_days,
+        batch__expiry_date__gt=today
+    ).count()
+    
+    # Expired items
+    expired_items = my_inventory.filter(batch__expiry_date__lte=today)
+    expired_count = expired_items.count()
+    
+    # Critical alerts (expiring in 7 days)
+    critical_items = my_inventory.filter(
+        batch__expiry_date__lte=seven_days,
+        batch__expiry_date__gt=today
+    ).order_by('batch__expiry_date')[:5]
+    critical_count = critical_items.count()
+    
+    # === INCOMING TRANSFERS ===
+    incoming_transfers = MedicineTransfer.objects.filter(
+        to_user=user, 
+        is_completed=False
+    ).select_related('from_user', 'batch__medicine').order_by('-transfer_date')[:5]
+    pending_transfers_count = MedicineTransfer.objects.filter(
+        to_user=user, 
+        is_completed=False
+    ).count()
+    
+    # === RESERVATION REQUESTS ===
+    my_requests = ReservationRequest.objects.filter(
+        pharmacy=user
+    ).order_by('-created_at')[:5]
+    pending_requests_count = ReservationRequest.objects.filter(
+        pharmacy=user,
+        status=ReservationRequest.STATUS_PENDING
+    ).count()
+    
+    # === PRESCRIPTION STATS (if prescription app exists) ===
+    try:
+        from prescription.models import Prescription
+        pending_prescriptions = Prescription.objects.filter(
+            status='pending'
+        ).select_related('patient', 'medicine')[:5]
+        pending_prescriptions_count = Prescription.objects.filter(status='pending').count()
+    except:
+        pending_prescriptions = []
+        pending_prescriptions_count = 0
+    
+    # === VALUE OF INVENTORY ===
+    inventory_value = 0
+    for inv in my_inventory:
+        price = inv.get_price() if inv.selling_price else (inv.batch.selling_price if inv.batch else 0)
+        inventory_value += float(price or 0) * inv.current_stock
+    
+    context = {
+        # Statistics
+        'total_items': total_items,
+        'total_stock': total_stock,
+        'low_stock_count': low_stock_count,
+        'expiring_count': expiring_count,
+        'expired_count': expired_count,
+        'critical_count': critical_count,
+        'pending_transfers_count': pending_transfers_count,
+        'pending_requests_count': pending_requests_count,
+        'pending_prescriptions_count': pending_prescriptions_count,
+        'inventory_value': round(inventory_value, 2),
+        
+        # Data lists
+        'low_stock_items': low_stock_items,
+        'expiring_soon': expiring_soon,
+        'expired_items': expired_items,
+        'critical_items': critical_items,
+        'incoming_transfers': incoming_transfers,
+        'my_requests': my_requests,
+        'pending_prescriptions': pending_prescriptions,
+    }
+    
+    return render(request, 'frontend/pharmacist/pharmacist_dashboard.html', context)
 
 
 @login_required
@@ -48,41 +216,247 @@ def pharmacist_medicine_search(request):
         return redirect('frontend:pharmacist_dashboard')
 
     q = (request.GET.get('q') or '').strip()
-    medicines = Medicine.objects.filter(is_active=True)
+    medicines = Medicine.objects.filter(is_active=True).select_related('manufacturer').order_by('name')
+    
+    # Apply search filter if query provided
     if q:
-        medicines = medicines.filter(name__icontains=q) | medicines.filter(generic_name__icontains=q)
+        from django.db.models import Q
+        medicines = medicines.filter(Q(name__icontains=q) | Q(generic_name__icontains=q))
+    else:
+        # If no search, limit to first 20 medicines to avoid loading too many
+        medicines = medicines[:20]
 
-    # For each medicine compute total available across all manufacturers
-    from django.db.models import Sum, F
+    # For each medicine compute total available across all manufacturers and price range
+    from django.db.models import Sum, F, Min, Max
     med_list = []
-    for med in medicines.order_by('name'):
-        total_available = (Inventory.objects.filter(batch__medicine=med).annotate(available=F('current_stock') - F('reserved_stock')).aggregate(total=Sum('available'))['total']) or 0
-        med_list.append({'medicine': med, 'available': total_available})
+    for med in medicines:
+        # Calculate available stock from manufacturer inventory
+        total_available = (Inventory.objects.filter(
+            batch__medicine=med
+        ).annotate(
+            available=F('current_stock') - F('reserved_stock')
+        ).aggregate(total=Sum('available'))['total']) or 0
+        
+        # Get price range from manufacturer batches (cost price)
+        price_data = MedicineBatch.objects.filter(
+            medicine=med, 
+            is_active=True
+        ).aggregate(
+            min_price=Min('cost_price'),
+            max_price=Max('cost_price')
+        )
+        
+        med_list.append({
+            'medicine': med, 
+            'available': total_available,
+            'min_price': price_data.get('min_price'),
+            'max_price': price_data.get('max_price'),
+        })
 
     return render(request, 'frontend/pharmacist/medicine_search.html', {'med_rows': med_list, 'q': q})
+
+
+@login_required
+def pharmacist_medicine_detail(request, medicine_id):
+    """Pharmacist-specific medicine detail page showing manufacturer info and ordering options"""
+    if not request.user.is_pharmacist:
+        return redirect('frontend:pharmacist_dashboard')
+    
+    medicine = get_object_or_404(Medicine, id=medicine_id, is_active=True)
+    
+    # Get manufacturer inventory (available stock from manufacturer)
+    from django.db.models import Sum, F, Min, Max
+    total_available = (Inventory.objects.filter(
+        batch__medicine=medicine
+    ).annotate(
+        available=F('current_stock') - F('reserved_stock')
+    ).aggregate(total=Sum('available'))['total']) or 0
+    
+    # Get all batches from manufacturer
+    batches = MedicineBatch.objects.filter(
+        medicine=medicine,
+        is_active=True
+    ).select_related('medicine__manufacturer').order_by('-manufacturing_date')
+    
+    # Get price range
+    price_data = batches.aggregate(
+        min_price=Min('cost_price'),
+        max_price=Max('cost_price')
+    )
+    
+    # Get manufacturer inventory details
+    manufacturer_inventory = Inventory.objects.filter(
+        batch__medicine=medicine
+    ).select_related('batch').annotate(
+        available=F('current_stock') - F('reserved_stock')
+    )
+    
+    # Check if pharmacist already has this medicine
+    pharmacist_stock = PharmacyInventory.objects.filter(
+        pharmacist=request.user,
+        batch__medicine=medicine
+    ).select_related('batch').aggregate(
+        total=Sum('current_stock')
+    )['total'] or 0
+    
+    # Get existing reservation requests for this medicine
+    existing_requests = ReservationRequest.objects.filter(
+        pharmacy=request.user,
+        medicine=medicine
+    ).select_related('manufacturer').order_by('-created_at')[:5]
+    
+    context = {
+        'medicine': medicine,
+        'total_available': total_available,
+        'min_price': price_data.get('min_price'),
+        'max_price': price_data.get('max_price'),
+        'batches': batches,
+        'manufacturer_inventory': manufacturer_inventory,
+        'pharmacist_stock': pharmacist_stock,
+        'existing_requests': existing_requests,
+    }
+    
+    return render(request, 'frontend/pharmacist/medicine_detail.html', context)
 
 
 # Patient catalog views
 @login_required
 def medicine_catalog(request):
     q = (request.GET.get('q') or '').strip()
-    medicines = Medicine.objects.filter(is_active=True)
+    category = request.GET.get('category', '')
+    
+    medicines = Medicine.objects.filter(is_active=True).select_related('manufacturer')
+    
     if q:
-        medicines = medicines.filter(name__icontains=q) | medicines.filter(generic_name__icontains=q)
-    medicines = medicines.order_by('name')
-    return render(request, 'frontend/patient/catalog.html', {'medicines': medicines, 'q': q})
+        from django.db.models import Q
+        medicines = medicines.filter(
+            Q(name__icontains=q) | 
+            Q(generic_name__icontains=q) | 
+            Q(description__icontains=q)
+        )
+    
+    if category:
+        medicines = medicines.filter(category=category)
+    
+    # Get price range and availability for each medicine
+    med_list = []
+    for med in medicines.order_by('name'):
+        price_range = med.get_price_range()
+        # Check total availability across all pharmacies
+        total_available = PharmacyInventory.objects.filter(
+            batch__medicine=med, 
+            current_stock__gt=0
+        ).aggregate(total=Sum('current_stock'))['total'] or 0
+        
+        med_list.append({
+            'medicine': med,
+            'min_price': price_range.get('min_price'),
+            'max_price': price_range.get('max_price'),
+            'available_stock': total_available,
+        })
+    
+    # Get all categories for filter
+    categories = Medicine.CATEGORY_CHOICES
+    
+    return render(request, 'frontend/patient/catalog.html', {
+        'med_list': med_list, 
+        'q': q,
+        'category': category,
+        'categories': categories,
+    })
 
 
 @login_required
 def medicine_availability(request, medicine_id):
     medicine = get_object_or_404(Medicine, id=medicine_id, is_active=True)
-    # Pharmacies with stock for any batch of this medicine
+    
+    # Get all pharmacies with stock, group by pharmacist with total stock and best price
     inventories = PharmacyInventory.objects.filter(
-        batch__medicine=medicine, current_stock__gt=0
-    ).select_related('pharmacist__pharmacist_profile', 'batch')
+        batch__medicine=medicine, 
+        current_stock__gt=0
+    ).select_related('pharmacist__pharmacist_profile', 'batch__medicine')
+    
+    # Group by pharmacy and calculate totals
+    pharmacy_data = {}
+    for inv in inventories:
+        pharm_id = inv.pharmacist.id
+        if pharm_id not in pharmacy_data:
+            pharmacy_data[pharm_id] = {
+                'pharmacist': inv.pharmacist,
+                'profile': getattr(inv.pharmacist, 'pharmacist_profile', None),
+                'total_stock': 0,
+                'prices': [],
+                'batches': [],
+            }
+        
+        pharmacy_data[pharm_id]['total_stock'] += inv.current_stock
+        price = inv.get_price()
+        if price:
+            pharmacy_data[pharm_id]['prices'].append(float(price))
+        pharmacy_data[pharm_id]['batches'].append({
+            'batch': inv.batch,
+            'stock': inv.current_stock,
+            'price': price,
+        })
+    
+    # Calculate min price for each pharmacy
+    pharmacy_list = []
+    for data in pharmacy_data.values():
+        data['min_price'] = min(data['prices']) if data['prices'] else None
+        data['max_price'] = max(data['prices']) if data['prices'] else None
+        pharmacy_list.append(data)
+    
+    # Sort by price (lowest first)
+    pharmacy_list.sort(key=lambda x: x['min_price'] if x['min_price'] else float('inf'))
+    
+    # Get all batches for trace functionality
+    all_batches = medicine.batches.filter(is_active=True).select_related('medicine__manufacturer')
+    
     return render(request, 'frontend/patient/medicine_availability.html', {
         'medicine': medicine,
-        'inventories': inventories,
+        'pharmacy_list': pharmacy_list,
+        'all_batches': all_batches,
+        'total_pharmacies': len(pharmacy_list),
+    })
+
+
+@login_required
+def medicine_detail_page(request, medicine_id):
+    """Comprehensive medicine detail page with all information"""
+    medicine = get_object_or_404(Medicine, id=medicine_id, is_active=True)
+    
+    # Get price range
+    price_range = medicine.get_price_range()
+    
+    # Get total availability
+    total_available = PharmacyInventory.objects.filter(
+        batch__medicine=medicine,
+        current_stock__gt=0
+    ).aggregate(total=Sum('current_stock'))['total'] or 0
+    
+    # Get pharmacy count
+    pharmacy_count = PharmacyInventory.objects.filter(
+        batch__medicine=medicine,
+        current_stock__gt=0
+    ).values('pharmacist').distinct().count()
+    
+    # Get all batches with details
+    batches = medicine.batches.filter(is_active=True).select_related('medicine__manufacturer')
+    
+    # Get recent batch with most stock
+    recent_batches = medicine.batches.filter(
+        is_active=True,
+        quantity__gt=0
+    ).order_by('-manufacturing_date')[:5]
+    
+    return render(request, 'frontend/patient/medicine_detail.html', {
+        'medicine': medicine,
+        'min_price': price_range.get('min_price'),
+        'max_price': price_range.get('max_price'),
+        'total_available': total_available,
+        'pharmacy_count': pharmacy_count,
+        'batches': batches,
+        'recent_batches': recent_batches,
     })
 
 
@@ -206,22 +580,83 @@ def accept_transfer(request, transfer_id):
 def pharmacist_inventory(request):
     if not request.user.is_pharmacist:
         return redirect('frontend:pharmacist_dashboard')
-    items = PharmacyInventory.objects.filter(pharmacist=request.user).select_related('batch__medicine')
-
-    # Build rows list where each row contains the inventory item and available manufacturers for that medicine
-    rows = []
-    for item in items:
-        med = item.batch.medicine
-        # Only include manufacturers who have available stock for this medicine
-        from django.db.models import F
-        inv_qs = Inventory.objects.filter(batch__medicine=med).annotate(available=F('current_stock') - F('reserved_stock')).filter(available__gt=0)
-        mans = User.objects.filter(id__in=inv_qs.values_list('batch__medicine__manufacturer', flat=True)).distinct()
-        rows.append({'item': item, 'manufacturers': list(mans)})
-
-    # Consolidated reservation list for the pharmacist (top-level)
-    my_requests_all = list(ReservationRequest.objects.filter(pharmacy=request.user).order_by('-created_at')[:20])
-
-    return render(request, 'frontend/pharmacist/inventory.html', {'rows': rows, 'my_requests_all': my_requests_all})
+    
+    # Get filter parameters
+    search_query = request.GET.get('q', '').strip()
+    stock_filter = request.GET.get('stock', 'all')  # all, low, out
+    expiry_filter = request.GET.get('expiry', 'all')  # all, fresh, expiring, expired
+    sort_by = request.GET.get('sort', 'name')  # name, stock, expiry, value
+    
+    # Base queryset
+    items = PharmacyInventory.objects.filter(
+        pharmacist=request.user
+    ).select_related('batch__medicine', 'batch__medicine__manufacturer')
+    
+    # Search filter
+    if search_query:
+        items = items.filter(
+            Q(batch__medicine__name__icontains=search_query) |
+            Q(batch__medicine__generic_name__icontains=search_query) |
+            Q(batch__batch_number__icontains=search_query)
+        )
+    
+    # Stock level filter
+    if stock_filter == 'low':
+        items = items.filter(current_stock__lte=10, current_stock__gt=0)
+    elif stock_filter == 'out':
+        items = items.filter(current_stock=0)
+    
+    # Expiry filter
+    today = date.today()
+    if expiry_filter == 'fresh':
+        items = items.filter(batch__expiry_date__gt=today + timedelta(days=30))
+    elif expiry_filter == 'expiring':
+        items = items.filter(
+            batch__expiry_date__lte=today + timedelta(days=30),
+            batch__expiry_date__gt=today
+        )
+    elif expiry_filter == 'expired':
+        items = items.filter(batch__expiry_date__lte=today)
+    
+    # Sorting
+    if sort_by == 'stock':
+        items = items.order_by('current_stock')
+    elif sort_by == 'expiry':
+        items = items.order_by('batch__expiry_date')
+    elif sort_by == 'value':
+        items = items.order_by('-current_stock')  # Simplified
+    else:
+        items = items.order_by('batch__medicine__name')
+    
+    # Calculate statistics
+    all_items = PharmacyInventory.objects.filter(pharmacist=request.user)
+    total_items = all_items.count()
+    total_value = sum([
+        float(item.get_price() or 0) * item.current_stock 
+        for item in all_items.select_related('batch')
+    ])
+    low_stock_count = all_items.filter(
+        current_stock__lte=10,
+        current_stock__gt=0
+    ).count()
+    expiring_count = all_items.filter(
+        batch__expiry_date__lte=today + timedelta(days=30),
+        batch__expiry_date__gt=today
+    ).count()
+    
+    context = {
+        'items': items,
+        'search_query': search_query,
+        'stock_filter': stock_filter,
+        'expiry_filter': expiry_filter,
+        'sort_by': sort_by,
+        'total_items': total_items,
+        'total_value': round(total_value, 2),
+        'low_stock_count': low_stock_count,
+        'expiring_count': expiring_count,
+    }
+    
+    return render(request, 'frontend/pharmacist/inventory.html', context)
 
 @login_required
 @user_passes_test(is_manufacturer)
@@ -628,48 +1063,48 @@ def respond_reservation_request(request, request_id, action):
         return redirect('frontend:manufacturer_reservations')
 
     if action == 'accept':
-        # Mark reserved (accepted -> reserved)
-        req.status = ReservationRequest.STATUS_RESERVED
-        req.responded_by = request.user
-        req.responded_at = timezone.now()
-        req.save()
+        # Allocate and create transfers under a DB transaction
+        with transaction.atomic():
+            req.status = ReservationRequest.STATUS_RESERVED
+            req.responded_by = request.user
+            req.responded_at = timezone.now()
+            req.save()
 
-        # Reserve inventory: try to allocate req.quantity across manufacturer's Inventory batches
-        remaining = req.quantity
-        allocated = []
-        try:
-            invs = Inventory.objects.filter(
-                batch__medicine=req.medicine,
-                batch__medicine__manufacturer=request.user
-            ).select_related('batch').order_by('batch__manufacturing_date')
+            remaining = req.quantity or 0
+            allocated = []
+            invs = (Inventory.objects
+                    .select_for_update()
+                    .filter(
+                        batch__medicine=req.medicine,
+                        batch__medicine__manufacturer=request.user
+                    )
+                    .select_related('batch')
+                    .order_by('batch__manufacturing_date'))
+
             for inv in invs:
-                avail = inv.available_stock
+                avail = (inv.current_stock or 0) - (inv.reserved_stock or 0)
                 if avail <= 0:
                     continue
                 take = min(avail, remaining)
-                inv.reserved_stock += take
-                inv.save()
+                if take <= 0:
+                    continue
+                Inventory.objects.filter(pk=inv.pk).update(
+                    reserved_stock=F('reserved_stock') + take
+                )
                 allocated.append((inv, take))
                 remaining -= take
                 if remaining <= 0:
                     break
 
-            # Set messages based on allocation result
             if remaining > 0:
-                messages.warning(request, f'Request accepted but only partially allocated ({req.quantity - remaining}/{req.quantity}). Please transfer remaining units manually.')
+                messages.warning(request, f'Request accepted but only partially allocated ({(req.quantity or 0) - remaining}/{req.quantity}).')
             else:
                 messages.success(request, f'Request accepted and {req.quantity} units reserved for {req.pharmacy.username}.')
-        except Exception as e:
-            messages.error(request, f'Accepted but reservation allocation failed: {e}')
 
-        # After accepting, create MedicineTransfer records for each allocation so the transfer shows up
-        # in the pharmacist's incoming transfers list. Decrement sender inventory current_stock accordingly.
-        try:
             created_transfer_ids = []
             for inv_obj, qty_taken in allocated:
                 if qty_taken <= 0:
                     continue
-                # create transfer per allocated inventory batch
                 transfer = MedicineTransfer.objects.create(
                     transfer_type='manufacturer_to_pharmacy',
                     from_user=request.user,
@@ -679,30 +1114,18 @@ def respond_reservation_request(request, request_id, action):
                     notes=f'Auto-created transfer for request {req.id}',
                     is_completed=False,
                 )
-                # Decrement sender inventory current_stock by the transfer quantity
-                try:
-                    inv_obj.current_stock = max(0, (inv_obj.current_stock or 0) - qty_taken)
-                    # Also reduce reserved_stock since we've allocated from reserved
-                    inv_obj.reserved_stock = max(0, (inv_obj.reserved_stock or 0) - qty_taken)
-                    inv_obj.save()
-                except Exception:
-                    # ignore inventory decrement errors but keep transfer record
-                    pass
-
+                Inventory.objects.filter(pk=inv_obj.pk).update(
+                    current_stock=F('current_stock') - qty_taken,
+                    reserved_stock=F('reserved_stock') - qty_taken,
+                )
                 created_transfer_ids.append(str(transfer.id))
 
-            # Tag reservation note with created transfer ids
             if created_transfer_ids:
                 extra = req.note or ''
                 extra += '|transfer_id:' + ','.join(created_transfer_ids)
                 req.note = extra
                 req.save()
 
-        except Exception as e:
-            # if transfer creation failed, still proceed but warn
-            messages.warning(request, f'Request accepted but automatic transfer creation failed: {e}')
-
-        # After creating transfers, redirect to the manufacturer's transfers page
         from django.urls import reverse
         return redirect(reverse('frontend:inventory_management'))
 
@@ -736,13 +1159,18 @@ def transfer_medicine(request):
         if form.is_valid():
             transfer = form.save(commit=False)
             transfer.from_user = user
-            
-            # Update inventory
-            batch = transfer.batch
-            batch.inventory.current_stock -= transfer.quantity
-            batch.inventory.save()
-            
-            transfer.save()
+
+            # Atomic stock decrement to avoid race conditions
+            with transaction.atomic():
+                batch = transfer.batch
+                inv = Inventory.objects.select_for_update().get(pk=batch.inventory.pk)
+                if (inv.current_stock or 0) < (transfer.quantity or 0):
+                    messages.error(request, 'Insufficient stock to transfer the requested quantity.')
+                    return redirect('frontend:transfer_medicine')
+                Inventory.objects.filter(pk=inv.pk).update(
+                    current_stock=F('current_stock') - (transfer.quantity or 0)
+                )
+                transfer.save()
 
             # If this transfer was created as part of a reservation flow, link it by noting the reservation id
             reservation_id = request.POST.get('reservation_id')

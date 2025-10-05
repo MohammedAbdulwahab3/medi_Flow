@@ -1,0 +1,89 @@
+<!-- Pharmacist Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_dashboard' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'prescription_queue' %}active{% endif %}" 
+                   href="{% url 'frontend:prescription_queue' %}">
+                    <i class="fas fa-prescription"></i> Prescription Queue
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_inventory' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_inventory' %}">
+                    <i class="fas fa-boxes"></i> Inventory
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'sales_analytics' %}active{% endif %}" 
+                   href="{% url 'frontend:sales_analytics' %}">
+                    <i class="fas fa-chart-bar"></i> Sales Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'reorder_management' %}active{% endif %}" 
+                   href="{% url 'frontend:reorder_management' %}">
+                    <i class="fas fa-redo"></i> Reorder Management
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_reservations' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_reservations' %}">
+                    <i class="fas fa-shopping-cart"></i> Reservations
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_transfers' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_transfers' %}">
+                    <i class="fas fa-exchange-alt"></i> Transfers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_medicine_search' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_medicine_search' %}">
+                    <i class="fas fa-search"></i> Medicine Search
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:message_inbox' %}">
+                    <i class="fas fa-envelope"></i> Messages
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:notification_list' %}">
+                    <i class="fas fa-bell"></i> Notifications
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<style>
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: #e9ecef;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e7f1ff;
+}
+
+.sidebar .nav-link i {
+    margin-right: 0.5rem;
+}
+</style>

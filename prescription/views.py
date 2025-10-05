@@ -2,12 +2,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.http import JsonResponse
 
 from authentication_app.models import User
-from .models import Prescription, PatientMedicalRecord, PatientHistoryEntry
+from .models import (
+    Prescription, PatientMedicalRecord, PatientHistoryEntry,
+    DoctorProfile, PatientDoctorAssignment, Message, Notification
+)
 from inventory.models import PharmacyInventory
-from .forms import DoctorPrescriptionForm, PharmacistDispenseForm, DoctorHistoryEntryForm
+from .forms import (
+    DoctorPrescriptionForm, PharmacistDispenseForm, DoctorHistoryEntryForm,
+    DoctorProfileForm, MessageForm, MessageReplyForm, PatientDoctorAssignmentForm
+)
 
 
 def is_doctor(user):
@@ -204,4 +211,170 @@ def doctor_patient_history_lookup(request):
         'medical_record': med_record,
         'history_entries': history_entries,
         'form': form,
+    })
+
+
+# Doctor Profile Management
+@login_required
+@user_passes_test(is_doctor)
+def doctor_profile_edit(request):
+    profile, created = DoctorProfile.objects.get_or_create(user=request.user)
+    
+    if request.method == 'POST':
+        form = DoctorProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully')
+            return redirect('prescription:doctor_profile_edit')
+    else:
+        form = DoctorProfileForm(instance=profile)
+    
+    return render(request, 'frontend/doctor/profile_edit.html', {'form': form, 'profile': profile})
+
+
+# Messaging System
+@login_required
+def message_inbox(request):
+    """View inbox messages"""
+    received_messages = Message.objects.filter(recipient=request.user).select_related('sender').order_by('-sent_at')
+    sent_messages = Message.objects.filter(sender=request.user).select_related('recipient').order_by('-sent_at')
+    unread_count = received_messages.filter(is_read=False).count()
+    
+    return render(request, 'frontend/messaging/inbox.html', {
+        'received_messages': received_messages,
+        'sent_messages': sent_messages,
+        'unread_count': unread_count,
+    })
+
+
+@login_required
+def message_compose(request):
+    """Compose new message"""
+    if request.method == 'POST':
+        form = MessageForm(sender=request.user, data=request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.sender = request.user
+            message.save()
+            messages.success(request, 'Message sent successfully')
+            return redirect('prescription:message_inbox')
+    else:
+        form = MessageForm(sender=request.user)
+    
+    return render(request, 'frontend/messaging/compose.html', {'form': form})
+
+
+@login_required
+def message_detail(request, message_id):
+    """View message details and reply"""
+    message = get_object_or_404(Message, Q(sender=request.user) | Q(recipient=request.user), id=message_id)
+    
+    # Mark as read if recipient is viewing
+    if message.recipient == request.user and not message.is_read:
+        message.is_read = True
+        message.read_at = timezone.now()
+        message.save()
+    
+    # Get message thread (original + all replies)
+    if message.parent_message:
+        original = message.parent_message
+    else:
+        original = message
+    
+    thread = Message.objects.filter(
+        Q(id=original.id) | Q(parent_message=original)
+    ).select_related('sender', 'recipient').order_by('sent_at')
+    
+    if request.method == 'POST':
+        form = MessageReplyForm(request.POST)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.sender = request.user
+            reply.recipient = message.sender if message.sender != request.user else message.recipient
+            reply.subject = f"Re: {original.subject}"
+            reply.parent_message = original
+            reply.save()
+            messages.success(request, 'Reply sent successfully')
+            return redirect('prescription:message_detail', message_id=reply.id)
+    else:
+        form = MessageReplyForm()
+    
+    return render(request, 'frontend/messaging/detail.html', {
+        'message': message,
+        'thread': thread,
+        'form': form,
+    })
+
+
+# Notifications
+@login_required
+def notification_list(request):
+    """View all notifications"""
+    notifications = Notification.objects.filter(user=request.user).select_related(
+        'related_prescription', 'related_message'
+    ).order_by('-created_at')
+    unread_count = notifications.filter(is_read=False).count()
+    
+    return render(request, 'frontend/notifications/list.html', {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    })
+
+
+@login_required
+def notification_mark_read(request, notification_id):
+    """Mark notification as read"""
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.is_read = True
+    notification.read_at = timezone.now()
+    notification.save()
+    
+    if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    return redirect('prescription:notification_list')
+
+
+@login_required
+def notification_mark_all_read(request):
+    """Mark all notifications as read"""
+    Notification.objects.filter(user=request.user, is_read=False).update(
+        is_read=True,
+        read_at=timezone.now()
+    )
+    messages.success(request, 'All notifications marked as read')
+    return redirect('prescription:notification_list')
+
+
+@login_required
+def get_unread_counts(request):
+    """API endpoint for getting unread counts"""
+    unread_messages = Message.objects.filter(recipient=request.user, is_read=False).count()
+    unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    
+    return JsonResponse({
+        'messages': unread_messages,
+        'notifications': unread_notifications,
+    })
+
+
+# Doctor-Patient Assignment (Admin function)
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_doctor)
+def assign_doctor_to_patient(request):
+    """Assign doctor to patient"""
+    if request.method == 'POST':
+        form = PatientDoctorAssignmentForm(request.POST)
+        if form.is_valid():
+            assignment = form.save()
+            messages.success(request, f'Dr. {assignment.doctor.full_name or assignment.doctor.username} assigned to {assignment.patient.full_name or assignment.patient.username}')
+            return redirect('prescription:assign_doctor_to_patient')
+    else:
+        form = PatientDoctorAssignmentForm()
+    
+    assignments = PatientDoctorAssignment.objects.all().select_related('patient', 'doctor').order_by('-assigned_date')[:50]
+    
+    return render(request, 'frontend/doctor/assign_patients.html', {
+        'form': form,
+        'assignments': assignments,
     })

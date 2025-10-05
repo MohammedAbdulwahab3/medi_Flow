@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import pharmacy_views
 
 app_name = 'frontend'
 
@@ -7,13 +8,15 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('dashboard/patient/', views.patient_dashboard, name='patient_dashboard'),
     path('dashboard/doctor/', views.doctor_dashboard, name='doctor_dashboard'),
-    path('dashboard/pharmacist/', views.pharmacist_dashboard, name='pharmacist_dashboard'),
+    path('dashboard/pharmacist/', pharmacy_views.enhanced_pharmacist_dashboard, name='pharmacist_dashboard'),
     path('pharmacist/search/', views.pharmacist_medicine_search, name='pharmacist_medicine_search'),
+    path('pharmacist/medicine/<int:medicine_id>/detail/', views.pharmacist_medicine_detail, name='pharmacist_medicine_detail'),
     path('dashboard/manufacturer/', views.manufacturer_dashboard, name='manufacturer_dashboard'),
     
     # Patient catalog
     path('catalog/', views.medicine_catalog, name='medicine_catalog'),
     path('catalog/medicine/<int:medicine_id>/', views.medicine_availability, name='medicine_availability'),
+    path('catalog/medicine/<int:medicine_id>/detail/', views.medicine_detail_page, name='medicine_detail_page'),
     path('catalog/medicine/<int:medicine_id>/manufacturers/', views.medicine_manufacturers, name='medicine_manufacturers'),
     path('catalog/medicine/<int:medicine_id>/trace/', views.medicine_trace, name='medicine_trace'),
     
@@ -39,4 +42,13 @@ urlpatterns = [
     path('pharmacist/inventory/<int:inventory_id>/request/', views.request_reservation, name='request_reservation'),
     path('pharmacist/reservation/create/', views.create_reservation_request, name='create_reservation_request'),
     path('pharmacist/reservations/', views.pharmacist_reservations, name='pharmacist_reservations'),
+    
+    # Pharmacy Features
+    path('pharmacist/prescriptions/queue/', pharmacy_views.prescription_queue, name='prescription_queue'),
+    path('pharmacist/prescriptions/<int:prescription_id>/dispense/', pharmacy_views.dispense_prescription, name='dispense_prescription'),
+    path('pharmacist/sales/analytics/', pharmacy_views.sales_analytics, name='sales_analytics'),
+    path('pharmacist/sales/export/', pharmacy_views.export_sales_report, name='export_sales_report'),
+    path('pharmacist/reorder/', pharmacy_views.reorder_management, name='reorder_management'),
+    path('pharmacist/reorder/<int:alert_id>/request/', pharmacy_views.create_reorder_request, name='create_reorder_request'),
+    path('pharmacist/reorder/<int:alert_id>/dismiss/', pharmacy_views.dismiss_reorder_alert, name='dismiss_reorder_alert'),
 ]

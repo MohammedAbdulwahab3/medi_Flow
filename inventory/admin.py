@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Inventory, MedicineTransfer
+from .models import Inventory, MedicineTransfer, Warehouse
 
 @admin.register(Inventory)
 class InventoryAdmin(admin.ModelAdmin):
@@ -14,3 +14,10 @@ class MedicineTransferAdmin(admin.ModelAdmin):
     list_filter = ['transfer_type', 'transfer_date', 'is_completed']
     search_fields = ['from_user__username', 'to_user__username', 'batch__medicine__name']
     readonly_fields = ['transfer_date']
+
+
+@admin.register(Warehouse)
+class WarehouseAdmin(admin.ModelAdmin):
+    list_display = ['name', 'manufacturer', 'is_primary']
+    list_filter = ['is_primary']
+    search_fields = ['name', 'manufacturer__username']

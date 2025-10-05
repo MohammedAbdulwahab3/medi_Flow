@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dispense Prescription{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2><i class="fas fa-prescription"></i> Dispense Prescription #{{ prescription.id }}</h2>
+            
+            <!-- Prescription Details -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Prescription Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Patient:</strong> {{ prescription.patient.full_name|default:prescription.patient.username }}</p>
+                            <p><strong>Doctor:</strong> Dr. {{ prescription.doctor.full_name|default:prescription.doctor.username }}</p>
+                            <p><strong>Date:</strong> {{ prescription.prescribed_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Medicine:</strong> {{ prescription.medicine.name }}</p>
+                            <p><strong>Dosage:</strong> {{ prescription.dosage }}</p>
+                            <p><strong>Duration:</strong> {{ prescription.duration }}</p>
+                            <p><strong>Quantity:</strong> {{ prescription.quantity }} units</p>
+                        </div>
+                    </div>
+                    {% if prescription.notes %}
+                    <div class="alert alert-info mt-3">
+                        <strong>Notes:</strong> {{ prescription.notes }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Batches -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Stock</h5>
+                </div>
+                <div class="card-body">
+                    {% if available_batches %}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Batch</th>
+                                <th>Stock</th>
+                                <th>Expiry</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in available_batches %}
+                            <tr>
+                                <td>{{ inv.batch.batch_number }}</td>
+                                <td>{{ inv.current_stock }} units</td>
+                                <td>{{ inv.batch.expiry_date|date:"M d, Y" }}</td>
+                                <td>${{ inv.get_price }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> No stock available for this medicine.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dispense Form -->
+            {% if available_batches %}
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Dispense & Record Sale</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.prescription_id }}
+                        
+                        <div class="form-group">
+                            <label>Select Batch</label>
+                            <select name="batch_id" class="form-control" required>
+                                <option value="">-- Select Batch --</option>
+                                {% for inv in available_batches %}
+                                <option value="{{ inv.batch.id }}">
+                                    Batch {{ inv.batch.batch_number }} - {{ inv.current_stock }} units - ${{ inv.get_price }} - Expires {{ inv.batch.expiry_date|date:"M d, Y" }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            {{ form.quantity }}
+                        </div>
+
+                        <div class="form-group">
+                            <label>Payment Method</label>
+                            {{ form.payment_method }}
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            {{ form.notes }}
+                        </div>
+
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'frontend:prescription_queue' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check"></i> Dispense & Record Sale
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
