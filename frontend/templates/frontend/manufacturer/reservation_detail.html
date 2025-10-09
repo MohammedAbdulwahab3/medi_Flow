@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h3>Reservation #{{ request_obj.id }} — {{ request_obj.medicine.name }}</h3>
+    <div class="mb-3">
+        <strong>Pharmacy:</strong> {{ request_obj.pharmacy.get_full_name|default:request_obj.pharmacy.username }} ({{ request_obj.pharmacy.public_id }})
+    </div>
+    <div class="mb-3">
+        <strong>Quantity requested:</strong> {{ request_obj.quantity }}
+    </div>
+    <div class="mb-3">
+        <strong>Status:</strong> {{ request_obj.get_status_display }}
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Manufacturer Inventories (possible allocations)</h5>
+            <ul class="list-group">
+                {% for inv in inventories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ inv.batch.batch_number }}</strong> — Available: {{ inv.available_stock }} • Reserved: {{ inv.reserved_stock }}
+                            <div class="small text-muted">Manufactured: {{ inv.batch.manufacturing_date|date:'Y-m-d' }} • Expires: {{ inv.batch.expiry_date|date:'Y-m-d' }}</div>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">Inventory ID: {{ inv.id }}</small>
+                        </div>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">No inventories found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

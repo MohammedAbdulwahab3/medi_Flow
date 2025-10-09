@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Reservation Requests{% endblock %}
+
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-shopping-cart"></i> My Reservation Requests</h2>
+            <p class="text-muted">Track your medicine requests from manufacturers</p>
+        </div>
+    </div>
+
+    <!-- Filter by Status -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="btn-group" role="group" aria-label="Filter by status">
+                <a href="?status=all" class="btn btn-outline-primary {% if not request.GET.status or request.GET.status == 'all' %}active{% endif %}">
+                    All ({{ requests|length }})
+                </a>
+                <a href="?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">
+                    Pending
+                </a>
+                <a href="?status=reserved" class="btn btn-outline-success {% if request.GET.status == 'reserved' %}active{% endif %}">
+                    Reserved
+                </a>
+                <a href="?status=transferred" class="btn btn-outline-info {% if request.GET.status == 'transferred' %}active{% endif %}">
+                    Transferred
+                </a>
+                <a href="?status=rejected" class="btn btn-outline-danger {% if request.GET.status == 'rejected' %}active{% endif %}">
+                    Rejected
+                </a>
+            </div>
+            <a href="{% url 'frontend:pharmacist_medicine_search' %}" class="btn btn-primary float-end">
+                <i class="fas fa-plus"></i> New Request
+            </a>
+        </div>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Requests History</h6>
+        </div>
+        <div class="card-body">
+            {% if requests %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Medicine</th>
+                            <th>Manufacturer</th>
+                            <th class="text-center">Quantity</th>
+                            <th>Requested On</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td><strong>#{{ req.id }}</strong></td>
+                            <td>
+                                <strong>{{ req.medicine.name }}</strong><br>
+                                <small class="text-muted">{{ req.medicine.generic_name }}</small>
+                            </td>
+                            <td>
+                                <i class="fas fa-industry text-primary"></i> 
+                                {{ req.manufacturer.full_name|default:req.manufacturer.username }}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-info">{{ req.quantity }} units</span>
+                            </td>
+                            <td>
+                                {{ req.created_at|date:"M d, Y" }}<br>
+                                <small class="text-muted">{{ req.created_at|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                {% if req.status == req.STATUS_PENDING %}
+                                    <span class="badge badge-warning"><i class="fas fa-clock"></i> Pending</span>
+                                {% elif req.status == req.STATUS_RESERVED %}
+                                    <span class="badge badge-success"><i class="fas fa-check"></i> Reserved</span>
+                                {% elif req.status == req.STATUS_TRANSFERRED %}
+                                    <span class="badge badge-info"><i class="fas fa-truck"></i> Transferred</span>
+                                {% else %}
+                                    <span class="badge badge-danger"><i class="fas fa-times"></i> Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.note %}
+                                    {% if 'transfer_id:' in req.note %}
+                                        <a href="{% url 'frontend:pharmacist_transfers' %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-truck"></i> View Transfer
+                                        </a>
+                                    {% else %}
+                                        <small>{{ req.note|truncatewords:10 }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <small class="text-muted">-</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">You haven't made any reservation requests yet.</p>
+                <a href="{% url 'frontend:pharmacist_medicine_search' %}" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search Medicines
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</main>
+{% endblock %}

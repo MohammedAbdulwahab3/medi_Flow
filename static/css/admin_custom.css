@@ -1,0 +1,51 @@
+/* MediFlow Admin custom styles */
+:root{
+  --mf-primary:#2563eb; /* blue-600 */
+  --mf-accent:#06b6d4; /* teal-400 */
+  --mf-bg:#0f172a; /* slate-900 */
+  --mf-card:#0b1220; /* dark card */
+  --mf-text:#e6eef8;
+}
+
+/* General admin tweaks */
+#header{
+  background: linear-gradient(90deg, rgba(37,99,235,1) 0%, rgba(6,182,212,1) 100%);
+  color: white;
+}
+
+#user-tools a, #site-name a{
+  color: rgba(255,255,255,0.9);
+}
+
+/* Branding */
+.mf-branding .mf-brand{
+  display:flex;align-items:center;gap:10px;text-decoration:none;color:white;padding:8px 12px;border-radius:6px;
+}
+.mf-logo{
+  background: rgba(255,255,255,0.12);padding:6px 8px;border-radius:6px;font-weight:700;color:white;
+}
+.mf-title{font-size:18px;font-weight:700}
+
+/* Login page */
+.admin-login-container{display:flex;justify-content:center;align-items:center;min-height:70vh;padding:40px}
+.admin-login-card{background:linear-gradient(180deg, rgba(11,17,32,0.9), rgba(8,12,20,0.95));padding:30px;border-radius:12px;max-width:480px;width:100%;box-shadow:0 10px 30px rgba(2,6,23,0.6);color:var(--mf-text)}
+.admin-login-header{text-align:center;margin-bottom:16px}
+.mf-logo-large{width:72px;height:72px;border-radius:12px;background:var(--mf-primary);display:inline-flex;align-items:center;justify-content:center;font-weight:800;color:white;font-size:26px;margin:0 auto 8px}
+.admin-login-card h1{margin:0;font-size:22px}
+.admin-login-card .lead{color:rgba(230,238,248,0.8);margin-top:6px}
+
+/* Tweak admin forms */
+.form-row .field-box{background:#071223;padding:12px;border-radius:8px}
+
+/* Tables/rows */
+.change-list .results thead th{background:linear-gradient(90deg, rgba(37,99,235,0.08), rgba(6,182,212,0.06));}
+
+/* Make links and buttons match primary color */
+a.button, .submit-row input, .module .button {
+  background: var(--mf-primary); border-color: transparent; color: white; box-shadow: none;
+}
+
+/* Responsive */
+@media (max-width:600px){
+  .admin-login-card{padding:20px}
+}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Inventory Detail</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:inventory_management' %}">Back to Inventory</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">{{ inventory.batch.medicine.name }} — Batch {{ inventory.batch.batch_number }}</h5>
+            <p class="mb-1"><strong>Manufacturer:</strong> {{ inventory.batch.medicine.manufacturer.get_full_name|default:inventory.batch.medicine.manufacturer.username }}</p>
+            <p class="mb-1"><strong>Current stock:</strong> {{ inventory.current_stock }}</p>
+            <p class="mb-1"><strong>Reserved stock:</strong> {{ inventory.reserved_stock }}</p>
+            <p class="mb-1"><strong>Available:</strong> {{ inventory.available_stock }}</p>
+            <p class="mb-1"><strong>Minimum level:</strong> {{ inventory.minimum_stock_level }}</p>
+            <p class="mb-1"><strong>Last updated:</strong> {{ inventory.last_updated|date:"Y-m-d H:i" }}</p>
+            <hr>
+            <h6>Batch Details</h6>
+            <p><strong>Manufacturing date:</strong> {{ inventory.batch.manufacturing_date|date:"Y-m-d" }}</p>
+            <p><strong>Expiry date:</strong> {{ inventory.batch.expiry_date|date:"Y-m-d" }}</p>
+            <p><strong>Quantity in batch:</strong> {{ inventory.batch.quantity }}</p>
+            <p><strong>Selling price:</strong> {{ inventory.batch.selling_price }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Requests for this Medicine</h5>
+        </div>
+        <div class="card-body">
+            {% if reservations %}
+                <ul class="list-group">
+                {% for req in reservations %}
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{{ req.pharmacy.get_full_name|default:req.pharmacy.username }}</strong>
+                            <div class="small text-muted">Qty: {{ req.quantity }} • {{ req.created_at|date:'Y-m-d H:i' }}</div>
+                            <div class="small">{{ req.note|default:'' }}</div>
+                        </div>
+                        <div class="btn-group">
+                            <a class="btn btn-sm btn-success" href="{% url 'frontend:manufacturer_respond_reservation' req.id 'accept' %}">Reserve</a>
+                            <a class="btn btn-sm btn-danger" href="{% url 'frontend:manufacturer_respond_reservation' req.id 'reject' %}">Reject</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'frontend:manufacturer_reservation_detail' req.id %}">Details</a>
+                        </div>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <div class="text-muted">No requests for this medicine.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

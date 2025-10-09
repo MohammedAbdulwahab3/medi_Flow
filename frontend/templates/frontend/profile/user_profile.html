@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Profile Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        color: white;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        margin: 0 auto 1rem;
+        backdrop-filter: blur(10px);
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-left: 4px solid #667eea;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-label {
+        color: #6c757d;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .btn-modern {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+    
+    .role-badge {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        position: relative;
+        padding-left: 1rem;
+    }
+    
+    .section-title::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+    }
+    
+    .floating-action {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .floating-action:hover {
+        transform: scale(1.1);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Profile Header -->
+    <div class="profile-card">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <h1 class="h2 mb-2">{{ user.full_name|default:user.username }}</h1>
+                <div class="role-badge d-inline-block mb-3">{{ user.get_role_display }}</div>
+                <p class="mb-0 opacity-75">
+                    <i class="fas fa-envelope me-2"></i>{{ user.email }}<br>
+                    <i class="fas fa-phone me-2"></i>{{ user.phone|default:"Not provided" }}<br>
+                    <i class="fas fa-map-marker-alt me-2"></i>{{ user.address|default:"Not provided" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    {% if stats %}
+    <div class="row mb-4">
+        {% for key, value in stats.items %}
+        <div class="col-md-3 mb-3">
+            <div class="stats-card text-center">
+                <div class="stats-number">{{ value }}</div>
+                <div class="stats-label">{{ key|title|replace:"_":" " }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Profile Form -->
+        <div class="col-md-8">
+            <div class="form-card">
+                <h3 class="section-title">Profile Information</h3>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" name="full_name" value="{{ user.full_name }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" value="{{ user.email }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" name="phone" value="{{ user.phone }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" name="date_of_birth" value="{{ user.date_of_birth|date:'Y-m-d' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Gender</label>
+                                <select class="form-control" name="gender">
+                                    <option value="">Select Gender</option>
+                                    <option value="male" {% if user.gender == 'male' %}selected{% endif %}>Male</option>
+                                    <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Female</option>
+                                    <option value="other" {% if user.gender == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Emergency Contact</label>
+                                <input type="text" class="form-control" name="emergency_contact" value="{{ user.emergency_contact }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address" rows="3">{{ user.address }}</textarea>
+                    </div>
+                    
+                    {% if user.is_doctor or user.is_pharmacist %}
+                    <div class="form-group">
+                        <label class="form-label">License Number</label>
+                        <input type="text" class="form-control" name="license_number" value="{{ user.license_number }}">
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.is_manufacturer %}
+                    <div class="form-group">
+                        <label class="form-label">National ID</label>
+                        <input type="text" class="form-control" name="national_id" value="{{ user.national_id }}">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-modern">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-md-4">
+            <div class="form-card">
+                <h3 class="section-title">Quick Actions</h3>
+                
+                <div class="d-grid gap-3">
+                    <a href="{% url 'frontend:change_password' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </a>
+                    
+                    <a href="{% url 'frontend:analytics_dashboard' %}" class="btn btn-outline-success btn-lg">
+                        <i class="fas fa-chart-line me-2"></i>View Analytics
+                    </a>
+                    
+                    <a href="{% url 'frontend:advanced_search' %}" class="btn btn-outline-info btn-lg">
+                        <i class="fas fa-search me-2"></i>Advanced Search
+                    </a>
+                    
+                    {% if user.is_doctor %}
+                    <a href="{% url 'frontend:appointment_scheduler' %}" class="btn btn-outline-warning btn-lg">
+                        <i class="fas fa-calendar me-2"></i>Schedule Appointments
+                    </a>
+                    {% endif %}
+                    
+                    {% if user.is_patient %}
+                    <a href="{% url 'frontend:emergency_contacts' %}" class="btn btn-outline-danger btn-lg">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Emergency Contacts
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Account Security -->
+            <div class="form-card">
+                <h3 class="section-title">Account Security</h3>
+                
+                <div class="security-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Password</strong>
+                            <br><small class="text-muted">Last changed: Unknown</small>
+                        </div>
+                        <span class="badge bg-success">Secure</span>
+                    </div>
+                </div>
+                
+                <div class="security-item mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Two-Factor Auth</strong>
+                            <br><small class="text-muted">Add extra security</small>
+                        </div>
+                        <span class="badge bg-warning">Not Enabled</span>
+                    </div>
+                </div>
+                
+                <div class="security-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Login Activity</strong>
+                            <br><small class="text-muted">Monitor account access</small>
+                        </div>
+                        <span class="badge bg-info">Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+<button class="floating-action" data-bs-toggle="modal" data-bs-target="#quickActionsModal">
+    <i class="fas fa-plus"></i>
+</button>
+
+<!-- Quick Actions Modal -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <a href="{% url 'frontend:change_password' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-key"></i><br>Password
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'frontend:analytics_dashboard' %}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-chart-line"></i><br>Analytics
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'frontend:advanced_search' %}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-search"></i><br>Search
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'frontend:bulk_operations' %}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-tasks"></i><br>Bulk Ops
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

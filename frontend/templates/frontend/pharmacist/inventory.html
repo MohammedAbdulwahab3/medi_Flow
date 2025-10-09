@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventory Management{% endblock %}
+
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-boxes"></i> Inventory Management</h2>
+    <p class="text-muted">Manage your pharmacy stock and pricing</p>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Items</div>
+                    <div class="h5 mb-0 font-weight-bold">{{ total_items }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-success shadow">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Inventory Value</div>
+                    <div class="h5 mb-0 font-weight-bold">${{ total_value }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Low Stock</div>
+                    <div class="h5 mb-0 font-weight-bold">{{ low_stock_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-danger shadow">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Expiring Soon</div>
+                    <div class="h5 mb-0 font-weight-bold">{{ expiring_count }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <input type="text" name="q" class="form-control" placeholder="Search medicine or batch..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="stock" class="form-control">
+                        <option value="all" {% if stock_filter == 'all' %}selected{% endif %}>All Stock Levels</option>
+                        <option value="low" {% if stock_filter == 'low' %}selected{% endif %}>Low Stock</option>
+                        <option value="out" {% if stock_filter == 'out' %}selected{% endif %}>Out of Stock</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="expiry" class="form-control">
+                        <option value="all" {% if expiry_filter == 'all' %}selected{% endif %}>All Expiry</option>
+                        <option value="fresh" {% if expiry_filter == 'fresh' %}selected{% endif %}>Fresh (>30d)</option>
+                        <option value="expiring" {% if expiry_filter == 'expiring' %}selected{% endif %}>Expiring Soon</option>
+                        <option value="expired" {% if expiry_filter == 'expired' %}selected{% endif %}>Expired</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="sort" class="form-control">
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
+                        <option value="stock" {% if sort_by == 'stock' %}selected{% endif %}>Sort by Stock</option>
+                        <option value="expiry" {% if sort_by == 'expiry' %}selected{% endif %}>Sort by Expiry</option>
+                        <option value="value" {% if sort_by == 'value' %}selected{% endif %}>Sort by Value</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-filter"></i> Apply
+                    </button>
+                </div>
+                <div class="col-md-1">
+                    <a href="{% url 'frontend:pharmacist_inventory' %}" class="btn btn-secondary btn-block">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Inventory Items ({{ items|length }})</h6>
+        </div>
+        <div class="card-body">
+            {% if items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Medicine</th>
+                            <th>Batch</th>
+                            <th class="text-center">Stock</th>
+                            <th>Expiry</th>
+                            <th class="text-right">Cost</th>
+                            <th class="text-right">Selling Price</th>
+                            <th class="text-right">Value</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.batch.medicine.name }}</strong><br>
+                                <small class="text-muted">{{ item.batch.medicine.generic_name }}</small>
+                            </td>
+                            <td><small>{{ item.batch.batch_number }}</small></td>
+                            <td class="text-center">
+                                {% if item.current_stock == 0 %}
+                                <span class="badge badge-danger">Out of Stock</span>
+                                {% elif item.current_stock <= 10 %}
+                                <span class="badge badge-warning">{{ item.current_stock }} units</span>
+                                {% else %}
+                                <span class="badge badge-success">{{ item.current_stock }} units</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ item.batch.expiry_date|date:"M d, Y" }}<br>
+                                {% if item.batch.is_expired %}
+                                <span class="badge badge-danger">Expired</span>
+                                {% elif item.batch.is_expiring_soon %}
+                                <span class="badge badge-warning">Expiring Soon</span>
+                                {% else %}
+                                <span class="badge badge-success">Fresh</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right">${{ item.batch.cost_price }}</td>
+                            <td class="text-right">
+                                <strong>${{ item.get_price }}</strong>
+                            </td>
+                            <td class="text-right">
+                                ${% widthratio item.current_stock 1 item.get_price %}
+                            </td>
+                            <td class="text-right">
+                                {% if item.current_stock <= 10 and item.current_stock > 0 %}
+                                <a href="{% url 'frontend:reorder_management' %}" class="btn btn-sm btn-warning" title="Reorder">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No inventory items found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</main>
+
+<style>
+.border-left-primary { border-left: 4px solid #4e73df!important; }
+.border-left-success { border-left: 4px solid #1cc88a!important; }
+.border-left-warning { border-left: 4px solid #f6c23e!important; }
+.border-left-danger { border-left: 4px solid #e74a3b!important; }
+</style>
+{% endblock %}

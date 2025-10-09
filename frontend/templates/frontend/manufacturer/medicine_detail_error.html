@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="alert alert-warning">
+        <h4 class="alert-heading">Unable to display medicine details</h4>
+        <p>There was an issue rendering the details for <strong>{{ medicine_name }}</strong> (ID: {{ medicine_id }}).</p>
+        <hr>
+        <p class="mb-0">This is likely caused by malformed or binary data stored in the database for this record. The item remains intact and you can still access the medicine list to manage entries.</p>
+      </div>
+      <p>
+        <a href="{% url 'frontend:medicine_list' %}" class="btn btn-secondary">Back to Medicines</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

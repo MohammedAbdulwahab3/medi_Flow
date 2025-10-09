@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dispense Prescription{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h3 mb-0 text-fg-primary"><i class="fas fa-prescription text-brand-primary me-2"></i> Dispense Prescription #{{ prescription.id }}</h2>
+            </div>
+            
+            <!-- Prescription Details -->
+            <div class="card shadow-md mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0 text-fg-secondary"><i class="fas fa-file-prescription me-2"></i> Prescription Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Patient:</strong> {{ prescription.patient.full_name|default:prescription.patient.username }}</p>
+                            <p class="mb-1"><strong>Doctor:</strong> Dr. {{ prescription.doctor.full_name|default:prescription.doctor.username }}</p>
+                            <p class="mb-1"><strong>Date:</strong> {{ prescription.prescribed_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Medicine:</strong> {{ prescription.medicine.name }}</p>
+                            <p class="mb-1"><strong>Dosage:</strong> {{ prescription.dosage }}</p>
+                            <p class="mb-1"><strong>Duration:</strong> {{ prescription.duration }}</p>
+                            <p class="mb-1"><strong>Quantity:</strong> {{ prescription.quantity }} units</p>
+                        </div>
+                    </div>
+                    {% if prescription.notes %}
+                    <div class="alert alert-info shadow-sm mt-3 mb-0">
+                        <i class="fas fa-info-circle me-2"></i> <strong>Notes:</strong> {{ prescription.notes }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Batches -->
+            <div class="card shadow-md mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0 text-fg-secondary"><i class="fas fa-boxes me-2"></i> Available Stock</h5>
+                </div>
+                <div class="card-body">
+                    {% if available_batches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Batch</th>
+                                    <th>Stock</th>
+                                    <th>Expiry</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in available_batches %}
+                                <tr>
+                                    <td>{{ inv.batch.batch_number }}</td>
+                                    <td><span class="badge bg-primary-brand">{{ inv.current_stock }} units</span></td>
+                                    <td>{{ inv.batch.expiry_date|date:"M d, Y" }}</td>
+                                    <td><span class="text-success fw-bold">${{ inv.get_price }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning shadow-sm mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i> No stock available for this medicine in your pharmacy.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dispense Form -->
+            {% if available_batches %}
+            <div class="card shadow-md mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-cash-register me-2"></i> Dispense & Record Sale</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.prescription_id }}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.batch_id.id_for_label }}" class="form-label">Select Batch</label>
+                            <select name="{{ form.batch_id.name }}" id="{{ form.batch_id.id_for_label }}" class="form-select" required>
+                                <option value="">-- Select Batch --</option>
+                                {% for inv in available_batches %}
+                                <option value="{{ inv.batch.id }}">
+                                    Batch {{ inv.batch.batch_number }} - {{ inv.current_stock }} units - ${{ inv.get_price }} - Expires {{ inv.batch.expiry_date|date:"M d, Y" }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.batch_id.errors %}
+                                <div class="text-danger small mt-1">{{ form.batch_id.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantity</label>
+                            {{ form.quantity }}
+                            {% if form.quantity.errors %}
+                                <div class="text-danger small mt-1">{{ form.quantity.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.payment_method.id_for_label }}" class="form-label">Payment Method</label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                                <div class="text-danger small mt-1">{{ form.payment_method.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes (Optional)</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small mt-1">{{ form.notes.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger shadow-sm mb-3">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'frontend:prescription_queue' %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check me-2"></i> Dispense & Record Sale
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,728 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Appointment Scheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scheduler-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .scheduler-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="calendar-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="20" height="20" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23calendar-pattern)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .scheduler-container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .calendar-container {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .calendar-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .calendar-nav {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        color: white;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .calendar-nav:hover {
+        transform: scale(1.1);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .calendar-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 1rem;
+    }
+    
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .calendar-day-header {
+        background: #f8f9fa;
+        padding: 1rem;
+        text-align: center;
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .calendar-day {
+        background: white;
+        padding: 1rem;
+        min-height: 80px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .calendar-day:hover {
+        background: #f8f9fa;
+        transform: scale(1.02);
+    }
+    
+    .calendar-day.other-month {
+        background: #f8f9fa;
+        color: #adb5bd;
+    }
+    
+    .calendar-day.today {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .calendar-day.has-appointments {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .calendar-day.has-appointments::after {
+        content: '';
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 8px;
+        height: 8px;
+        background: rgba(255,255,255,0.8);
+        border-radius: 50%;
+    }
+    
+    .appointment-form {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .btn-schedule {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .btn-schedule:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+    
+    .time-slots {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .time-slot {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        font-weight: 500;
+    }
+    
+    .time-slot:hover {
+        background: #e9ecef;
+        border-color: #667eea;
+    }
+    
+    .time-slot.selected {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .time-slot.booked {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+    
+    .appointments-list {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .appointment-item {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+    
+    .appointment-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .appointment-time {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .appointment-patient {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+    
+    .appointment-notes {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    
+    .appointment-status {
+        background: #28a745;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .appointment-status.pending {
+        background: #ffc107;
+        color: #2c3e50;
+    }
+    
+    .appointment-status.cancelled {
+        background: #dc3545;
+    }
+    
+    .patient-selector {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .patient-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .patient-card:hover {
+        background: #e9ecef;
+        border-color: #667eea;
+    }
+    
+    .patient-card.selected {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .patient-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .patient-info {
+        font-size: 0.875rem;
+        opacity: 0.8;
+    }
+    
+    .modal-content {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px 20px 0 0;
+        border-bottom: none;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .modal-footer {
+        border-top: none;
+        padding: 1rem 2rem 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Scheduler Hero -->
+<div class="scheduler-hero">
+    <div class="container">
+        <div class="scheduler-container text-center">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-calendar-alt me-3"></i>Appointment Scheduler
+            </h1>
+            <p class="lead mb-4">Manage patient appointments efficiently</p>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Calendar -->
+        <div class="col-md-8">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button class="calendar-nav" onclick="previousMonth()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h3 class="calendar-title" id="calendarTitle">December 2024</h3>
+                    <button class="calendar-nav" onclick="nextMonth()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Time Slots -->
+            <div class="time-slots">
+                <h5 class="mb-3">
+                    <i class="fas fa-clock me-2"></i>Available Time Slots
+                </h5>
+                <div class="row" id="timeSlotsContainer">
+                    <!-- Time slots will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointment Form -->
+        <div class="col-md-4">
+            <!-- Patient Selector -->
+            <div class="patient-selector">
+                <h5 class="mb-3">
+                    <i class="fas fa-users me-2"></i>Select Patient
+                </h5>
+                <div id="patientList">
+                    {% for patient in assigned_patients %}
+                    <div class="patient-card" data-patient-id="{{ patient.patient.id }}">
+                        <div class="patient-name">{{ patient.patient.full_name|default:patient.patient.username }}</div>
+                        <div class="patient-info">{{ patient.patient.email }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Appointment Form -->
+            <div class="appointment-form">
+                <h5 class="mb-3">
+                    <i class="fas fa-calendar-plus me-2"></i>Schedule Appointment
+                </h5>
+                
+                <form method="post" id="appointmentForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="patient_id" id="selectedPatientId">
+                    <input type="hidden" name="appointment_datetime" id="selectedDateTime">
+                    
+                    <div class="form-group">
+                        <label class="form-label">Selected Date & Time</label>
+                        <input type="text" class="form-control" id="selectedDateTimeDisplay" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Appointment Type</label>
+                        <select class="form-control" name="appointment_type">
+                            <option value="consultation">Consultation</option>
+                            <option value="follow_up">Follow-up</option>
+                            <option value="emergency">Emergency</option>
+                            <option value="routine">Routine Check-up</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Duration (minutes)</label>
+                        <select class="form-control" name="duration">
+                            <option value="15">15 minutes</option>
+                            <option value="30" selected>30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="Additional notes for the appointment..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-schedule w-100">
+                        <i class="fas fa-calendar-check me-2"></i>Schedule Appointment
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Today's Appointments -->
+            <div class="appointments-list">
+                <h5 class="mb-3">
+                    <i class="fas fa-list me-2"></i>Today's Appointments
+                </h5>
+                
+                <div class="appointment-item">
+                    <div class="appointment-time">09:00 AM</div>
+                    <div class="appointment-patient">John Doe</div>
+                    <div class="appointment-notes">Routine check-up</div>
+                    <span class="appointment-status">Confirmed</span>
+                </div>
+                
+                <div class="appointment-item">
+                    <div class="appointment-time">10:30 AM</div>
+                    <div class="appointment-patient">Jane Smith</div>
+                    <div class="appointment-notes">Follow-up consultation</div>
+                    <span class="appointment-status pending">Pending</span>
+                </div>
+                
+                <div class="appointment-item">
+                    <div class="appointment-time">02:00 PM</div>
+                    <div class="appointment-patient">Mike Johnson</div>
+                    <div class="appointment-notes">Prescription review</div>
+                    <span class="appointment-status">Confirmed</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Appointment Details Modal -->
+<div class="modal fade" id="appointmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-alt me-2"></i>Appointment Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="appointment-details">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Date:</strong>
+                        </div>
+                        <div class="col-6" id="modalDate">
+                            December 15, 2024
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Time:</strong>
+                        </div>
+                        <div class="col-6" id="modalTime">
+                            10:00 AM
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Patient:</strong>
+                        </div>
+                        <div class="col-6" id="modalPatient">
+                            John Doe
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Type:</strong>
+                        </div>
+                        <div class="col-6" id="modalType">
+                            Consultation
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Notes:</strong>
+                        </div>
+                        <div class="col-6" id="modalNotes">
+                            Routine check-up
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger">Cancel Appointment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentDate = new Date();
+let selectedDate = null;
+let selectedTime = null;
+let selectedPatient = null;
+
+// Generate calendar
+function generateCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const calendarGrid = document.getElementById('calendarGrid');
+    const calendarTitle = document.getElementById('calendarTitle');
+    
+    // Update title
+    calendarTitle.textContent = firstDay.toLocaleDateString('en-US', { 
+        month: 'long', 
+        year: 'numeric' 
+    });
+    
+    // Clear grid
+    calendarGrid.innerHTML = '';
+    
+    // Add day headers
+    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        header.textContent = day;
+        calendarGrid.appendChild(header);
+    });
+    
+    // Generate days
+    for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.textContent = date.getDate();
+        
+        // Check if it's current month
+        if (date.getMonth() !== month) {
+            dayElement.classList.add('other-month');
+        }
+        
+        // Check if it's today
+        if (date.toDateString() === new Date().toDateString()) {
+            dayElement.classList.add('today');
+        }
+        
+        // Check if it has appointments (mock data)
+        if (Math.random() > 0.8) {
+            dayElement.classList.add('has-appointments');
+        }
+        
+        // Add click handler
+        dayElement.addEventListener('click', () => selectDate(date));
+        
+        calendarGrid.appendChild(dayElement);
+    }
+}
+
+// Generate time slots
+function generateTimeSlots() {
+    const container = document.getElementById('timeSlotsContainer');
+    container.innerHTML = '';
+    
+    const slots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+        '15:00', '15:30', '16:00', '16:30', '17:00'
+    ];
+    
+    slots.forEach(slot => {
+        const slotElement = document.createElement('div');
+        slotElement.className = 'col-md-4 mb-2';
+        
+        const slotButton = document.createElement('div');
+        slotButton.className = 'time-slot';
+        slotButton.textContent = slot;
+        
+        // Randomly mark some slots as booked
+        if (Math.random() > 0.7) {
+            slotButton.classList.add('booked');
+        } else {
+            slotButton.addEventListener('click', () => selectTimeSlot(slotButton, slot));
+        }
+        
+        slotElement.appendChild(slotButton);
+        container.appendChild(slotElement);
+    });
+}
+
+function selectDate(date) {
+    selectedDate = date;
+    
+    // Update visual selection
+    document.querySelectorAll('.calendar-day').forEach(day => {
+        day.classList.remove('selected');
+    });
+    
+    event.target.classList.add('selected');
+    
+    // Generate time slots for selected date
+    generateTimeSlots();
+}
+
+function selectTimeSlot(element, time) {
+    selectedTime = time;
+    
+    // Update visual selection
+    document.querySelectorAll('.time-slot').forEach(slot => {
+        slot.classList.remove('selected');
+    });
+    
+    element.classList.add('selected');
+    
+    // Update form
+    updateAppointmentForm();
+}
+
+function selectPatient(element, patientId) {
+    selectedPatient = patientId;
+    
+    // Update visual selection
+    document.querySelectorAll('.patient-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    element.classList.add('selected');
+    
+    // Update form
+    document.getElementById('selectedPatientId').value = patientId;
+}
+
+function updateAppointmentForm() {
+    if (selectedDate && selectedTime) {
+        const dateTime = new Date(selectedDate);
+        const [hours, minutes] = selectedTime.split(':');
+        dateTime.setHours(parseInt(hours), parseInt(minutes));
+        
+        document.getElementById('selectedDateTime').value = dateTime.toISOString();
+        document.getElementById('selectedDateTimeDisplay').value = 
+            dateTime.toLocaleDateString() + ' at ' + dateTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+}
+
+function previousMonth() {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    generateCalendar();
+}
+
+function nextMonth() {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    generateCalendar();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    generateCalendar();
+    generateTimeSlots();
+    
+    // Add patient selection handlers
+    document.querySelectorAll('.patient-card').forEach(card => {
+        card.addEventListener('click', () => selectPatient(card, card.dataset.patientId));
+    });
+    
+    // Form submission
+    document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+        if (!selectedDate || !selectedTime || !selectedPatient) {
+            e.preventDefault();
+            alert('Please select a date, time, and patient');
+        }
+    });
+});
+</script>
+{% endblock %}

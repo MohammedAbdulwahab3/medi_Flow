@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{# Make the admin use the site's base layout so admin pages look like the frontend #}
+{% block title %}MediFlow Admin{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" type="text/css" href="{% static 'css/admin_custom.css' %}">
+  {{ block.super }}
+{% endblock %}
+
+{% block content %}
+  <div class="container py-4">
+    <div class="d-flex align-items-center mb-4">
+      <div class="mf-logo" style="margin-right:12px;">MF</div>
+      <div>
+        <h2 class="mb-0">MediFlow Admin</h2>
+        <small class="text-muted">Manage users, medicines, prescriptions and system settings</small>
+      </div>
+    </div>
+    {% block admin_content %}{% endblock %}
+  </div>
+{% endblock %}

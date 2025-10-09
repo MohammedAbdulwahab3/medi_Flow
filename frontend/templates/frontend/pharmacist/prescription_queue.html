@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Prescription Search{% endblock %}
+
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 p-lg-4 p-md-3 p-2">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-fg-primary"><i class="fas fa-search text-brand-primary me-2"></i> Search Patient Prescriptions</h2>
+        <p class="text-muted d-none d-md-block mb-0">Search for a patient by ID or username to view their prescriptions</p>
+    </div>
+
+    <!-- Search Box -->
+    <div class="card shadow-md mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 text-fg-secondary"><i class="fas fa-user-search me-2"></i> Patient Search</h5>
+        </div>
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-10">
+                        <input type="text" 
+                               name="q" 
+                               class="form-control form-control-lg" 
+                               placeholder="Enter Patient ID, Username, or Full Name" 
+                               value="{{ search_query }}"
+                               autofocus
+                               required>
+                        <small class="form-text text-muted mt-2">
+                            <i class="fas fa-info-circle me-1"></i> Enter the patient's ID number, username, or full name to view their prescriptions
+                        </small>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-search me-1"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if search_query %}
+        {% if patient_found %}
+        <div class="card shadow-md">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-success">
+                    <i class="fas fa-check-circle me-2"></i> Patient Found - Prescriptions ({{ prescriptions|length }})
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Patient</th>
+                                <th>Medicine</th>
+                                <th>Dosage & Duration</th>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prescription in prescriptions %}
+                            <tr>
+                                <td>{{ prescription.id }}</td>
+                                <td>
+                                    <strong>{{ prescription.patient.full_name|default:prescription.patient.username }}</strong><br>
+                                    <small class="text-muted">ID: {{ prescription.patient.id }} | {{ prescription.patient.username }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ prescription.medicine.name }}</strong><br>
+                                    <small class="text-muted">{{ prescription.medicine.generic_name }}</small>
+                                </td>
+                                <td>
+                                    {{ prescription.dosage }}<br>
+                                    <small class="text-muted">{{ prescription.duration }}</small>
+                                </td>
+                                <td>
+                                    Dr. {{ prescription.doctor.full_name|default:prescription.doctor.username }}
+                                </td>
+                                <td>
+                                    {{ prescription.prescribed_date|date:"M d, Y" }}<br>
+                                    <small class="text-muted">{{ prescription.prescribed_date|timesince }} ago</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if prescription.status == 'pending' %}bg-warning{% elif prescription.status == 'dispensed' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ prescription.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    {% if prescription.status == 'pending' %}
+                                    <a href="{% url 'frontend:dispense_prescription' prescription.id %}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-check me-1"></i> Dispense
+                                    </a>
+                                    {% else %}
+                                    <small class="text-muted">
+                                        {% if prescription.dispensed_by %}
+                                        Dispensed by {{ prescription.dispensed_by.username }}
+                                        {% endif %}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning shadow-sm" role="alert">
+            <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i> No Patient Found!</h4>
+            <p class="mb-0">No prescriptions found for "{{ search_query }}". Please check the patient ID, username, or name and try again.</p>
+        </div>
+        {% endif %}
+    {% else %}
+    <div class="alert alert-info shadow-sm" role="alert">
+        <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i> How to use:</h4>
+        <p class="mb-0">Enter a patient's ID, username, or full name in the search box above to view their prescriptions.</p>
+    </div>
+    {% endif %}
+</div>
+</main>
+{% endblock %}

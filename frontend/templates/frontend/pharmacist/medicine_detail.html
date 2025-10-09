@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ medicine.name }} - Details{% endblock %}
+
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="{% url 'frontend:pharmacist_medicine_search' %}" class="btn btn-outline-secondary mb-3">
+                <i class="fas fa-arrow-left"></i> Back to Search
+            </a>
+            <h2><i class="fas fa-pills"></i> {{ medicine.name }}</h2>
+            <p class="text-muted">Complete information and ordering options</p>
+        </div>
+    </div>
+
+    <!-- Main Info Card -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <!-- Medicine Image -->
+            {% if medicine.image %}
+            <img src="{{ medicine.image.url }}" class="img-fluid rounded shadow" alt="{{ medicine.name }}">
+            {% else %}
+            <div class="bg-light rounded shadow d-flex align-items-center justify-content-center" style="height: 300px;">
+                <i class="fas fa-pills fa-5x text-muted"></i>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3>{{ medicine.name }}</h3>
+                    <p class="text-muted mb-3">{{ medicine.generic_name }}</p>
+                    
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="150">Strength:</th>
+                            <td>{{ medicine.strength }}</td>
+                        </tr>
+                        <tr>
+                            <th>Dosage Form:</th>
+                            <td>{{ medicine.dosage_form }}</td>
+                        </tr>
+                        <tr>
+                            <th>Manufacturer:</th>
+                            <td>
+                                <i class="fas fa-industry text-primary"></i> 
+                                <strong>{{ medicine.manufacturer.full_name|default:medicine.manufacturer.username }}</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Price Range:</th>
+                            <td>
+                                {% if min_price %}
+                                <strong class="text-success">${{ min_price }}</strong>
+                                {% if max_price and max_price != min_price %}
+                                - <strong class="text-success">${{ max_price }}</strong>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">Price not available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Available from Mfg:</th>
+                            <td>
+                                <span class="badge {% if total_available > 0 %}badge-success{% else %}badge-danger{% endif %} badge-lg">
+                                    {{ total_available }} units
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Your Stock:</th>
+                            <td>
+                                <span class="badge badge-info badge-lg">{{ pharmacist_stock }} units</span>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-primary btn-lg" onclick="openPharmRequestModal({{ medicine.id }}, '{{ medicine.name|escapejs }}')">
+                            <i class="fas fa-shopping-cart"></i> Request from Manufacturer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description -->
+    {% if medicine.description %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-alt"></i> Description</h5>
+                </div>
+                <div class="card-body">
+                    {{ medicine.description|linebreaks }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Batches from Manufacturer -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5><i class="fas fa-boxes"></i> Available Batches from Manufacturer</h5>
+                </div>
+                <div class="card-body">
+                    {% if batches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Batch Number</th>
+                                    <th>Manufactured</th>
+                                    <th>Expiry</th>
+                                    <th>Quantity</th>
+                                    <th>Cost Price</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in batches %}
+                                <tr>
+                                    <td><code>{{ batch.batch_number }}</code></td>
+                                    <td>{{ batch.manufacturing_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {{ batch.expiry_date|date:"M d, Y" }}
+                                        {% if batch.is_expired %}
+                                        <span class="badge badge-danger ml-2">Expired</span>
+                                        {% elif batch.is_expiring_soon %}
+                                        <span class="badge badge-warning ml-2">Expiring Soon</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ batch.quantity }} units</td>
+                                    <td><strong>${{ batch.cost_price }}</strong></td>
+                                    <td>
+                                        {% if batch.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No batches available from manufacturer.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your Existing Requests -->
+    {% if existing_requests %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Your Recent Requests</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Manufacturer</th>
+                                    <th>Quantity</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in existing_requests %}
+                                <tr>
+                                    <td>#{{ req.id }}</td>
+                                    <td>{{ req.manufacturer.full_name|default:req.manufacturer.username }}</td>
+                                    <td>{{ req.quantity }} units</td>
+                                    <td>{{ req.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if req.status == req.STATUS_PENDING %}
+                                        <span class="badge badge-warning">Pending</span>
+                                        {% elif req.status == req.STATUS_RESERVED %}
+                                        <span class="badge badge-success">Reserved</span>
+                                        {% elif req.status == req.STATUS_TRANSFERRED %}
+                                        <span class="badge badge-info">Transferred</span>
+                                        {% else %}
+                                        <span class="badge badge-danger">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="{% url 'frontend:pharmacist_reservations' %}" class="btn btn-sm btn-outline-primary">
+                        View All Requests <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+</main>
+
+<!-- Enhanced Request Modal -->
+<div class="modal fade" id="pharmRequestModal" tabindex="-1" aria-labelledby="pharmRequestModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="pharmRequestModalLabel">
+            <i class="fas fa-shopping-cart"></i> Request Medicine from Manufacturer
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="pharmRequestForm">
+        {% csrf_token %}
+        <div class="modal-body">
+          <input type="hidden" id="pharm_med_id" name="medicine_id" value="{{ medicine.id }}">
+          
+          <!-- Medicine Info -->
+          <div class="alert alert-info">
+            <h6 class="mb-2"><i class="fas fa-pills"></i> <strong id="pharm_med_name">{{ medicine.name }}</strong></h6>
+            <small class="text-muted">{{ medicine.generic_name }} • {{ medicine.strength }} • {{ medicine.dosage_form }}</small>
+          </div>
+          
+          <!-- Manufacturer -->
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-industry"></i> Manufacturer</label>
+            <select id="pharm_manufacturer_select" class="form-select form-select-lg" required>
+                <option value="{{ medicine.manufacturer.id }}">{{ medicine.manufacturer.full_name|default:medicine.manufacturer.username }}</option>
+            </select>
+          </div>
+          
+          <!-- Quantity with validation -->
+          <div class="mb-3">
+            <label class="form-label">
+                <i class="fas fa-boxes"></i> Quantity <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-lg">
+              <input type="number" id="pharm_quantity" class="form-control" min="1" max="10000" value="1" required>
+              <span class="input-group-text">units</span>
+            </div>
+            <small class="form-text text-muted">
+                Available from manufacturer: <strong class="text-success">{{ total_available }} units</strong>
+            </small>
+          </div>
+          
+          <!-- Priority Level -->
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-flag"></i> Priority</label>
+            <select id="pharm_priority" class="form-select">
+                <option value="normal">Normal</option>
+                <option value="urgent">Urgent</option>
+                <option value="emergency">Emergency</option>
+            </select>
+          </div>
+          
+          <!-- Expected Delivery -->
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-calendar"></i> Preferred Delivery Date (Optional)</label>
+            <input type="date" id="pharm_delivery_date" class="form-control" min="{% now 'Y-m-d' %}">
+          </div>
+          
+          <!-- Notes -->
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-comment"></i> Additional Notes (Optional)</label>
+            <textarea id="pharm_notes" class="form-control" rows="3" maxlength="500" placeholder="Add any special instructions or requirements..."></textarea>
+            <small class="form-text text-muted">Max 500 characters</small>
+          </div>
+          
+          <!-- Summary -->
+          <div class="alert alert-light border">
+            <h6>Request Summary:</h6>
+            <ul class="mb-0">
+                <li><strong>Your Current Stock:</strong> <span class="badge badge-info">{{ pharmacist_stock }} units</span></li>
+                <li><strong>Request Quantity:</strong> <span id="summary_quantity">1</span> units</li>
+                <li><strong>Estimated Cost:</strong> $<span id="summary_cost">{% if min_price %}{{ min_price }}{% else %}0{% endif %}</span></li>
+            </ul>
+          </div>
+          
+          <div id="pharm_error_area"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-primary btn-lg">
+              <i class="fas fa-paper-plane"></i> Send Request
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openPharmRequestModal(medId, medName) {
+    document.getElementById('pharm_med_id').value = medId;
+    document.getElementById('pharm_med_name').textContent = medName;
+    document.getElementById('pharm_error_area').innerHTML = '';
+    var modal = new bootstrap.Modal(document.getElementById('pharmRequestModal'));
+    modal.show();
+}
+
+// Handle submit
+var pharmForm = document.getElementById('pharmRequestForm');
+if (pharmForm) pharmForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var medId = document.getElementById('pharm_med_id').value;
+    var manufacturer_id = document.getElementById('pharm_manufacturer_select').value;
+    var quantity = document.getElementById('pharm_quantity').value || 1;
+    var token = document.querySelector('#pharmRequestForm input[name="csrfmiddlewaretoken"]').value;
+    
+    fetch('{% url "frontend:create_reservation_request" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': token,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams({ 'manufacturer_id': manufacturer_id, 'medicine_id': medId, 'quantity': quantity })
+    }).then(function(resp) {
+        if (resp.ok) {
+            window.location.href = '{% url "frontend:pharmacist_reservations" %}';
+        } else {
+            document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>';
+        }
+    }).catch(function() {
+        document.getElementById('pharm_error_area').innerHTML = '<div class="alert alert-danger">Request failed</div>';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+<!-- Pharmacist Sidebar -->
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+    <div class="position-sticky pt-3 sidebar-sticky">
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-fg-muted">
+            <span>Pharmacy Management</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_dashboard' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'prescription_queue' %}active{% endif %}" 
+                   href="{% url 'frontend:prescription_queue' %}">
+                    <i class="fas fa-prescription"></i> Prescription Queue
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_inventory' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_inventory' %}">
+                    <i class="fas fa-boxes"></i> Inventory
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'sales_analytics' %}active{% endif %}" 
+                   href="{% url 'frontend:sales_analytics' %}">
+                    <i class="fas fa-chart-bar"></i> Sales Analytics
+                </a>
+            </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-fg-muted">
+            <span>Supply Chain</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'reorder_management' %}active{% endif %}" 
+                   href="{% url 'frontend:reorder_management' %}">
+                    <i class="fas fa-redo"></i> Reorder Management
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_reservations' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_reservations' %}">
+                    <i class="fas fa-shopping-cart"></i> Reservations
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_transfers' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_transfers' %}">
+                    <i class="fas fa-exchange-alt"></i> Transfers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_medicine_search' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_medicine_search' %}">
+                    <i class="fas fa-search"></i> Medicine Search
+                </a>
+            </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-fg-muted">
+            <span>Communication</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:message_inbox' %}">
+                    <i class="fas fa-envelope"></i> Messages
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:notification_list' %}">
+                    <i class="fas fa-bell"></i> Notifications
+                </a>
+            </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-fg-muted">
+            <span>Settings</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_location_settings' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_location_settings' %}">
+                    <i class="fas fa-map-marker-alt"></i> Location Settings
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>

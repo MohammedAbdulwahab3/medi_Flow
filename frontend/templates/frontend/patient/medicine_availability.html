@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:patient_dashboard' %}">
+                    <i class="fas fa-user"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_mine' %}">
+                    <i class="fas fa-prescription"></i> My Prescriptions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_history' %}">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'frontend:medicine_catalog' %}">
+                    <i class="fas fa-pills"></i> Medicines
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <!-- Breadcrumb -->
+    <div class="pt-3 pb-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'frontend:medicine_catalog' %}">Medicines</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'frontend:medicine_detail_page' medicine.id %}">{{ medicine.name }}</a></li>
+                <li class="breadcrumb-item active">Find Pharmacies</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Medicine Header -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-2"><i class="fas fa-map-marker-alt text-success"></i> {{ medicine.name }}</h2>
+                    <p class="text-muted mb-0">
+                        {% if medicine.generic_name %}{{ medicine.generic_name }} • {% endif %}
+                        {{ medicine.strength|default:"" }} {{ medicine.dosage_form|title }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'frontend:medicine_detail_page' medicine.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-info-circle"></i> Details
+                        </a>
+                        <a href="{% url 'frontend:medicine_trace' medicine.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-search-location"></i> Trace
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-store fa-2x text-success mb-2"></i>
+                    <h3 class="mb-0">{{ total_pharmacies }}</h3>
+                    <p class="text-muted mb-0">Pharmac{{ total_pharmacies|pluralize:"y,ies" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-boxes fa-2x text-primary mb-2"></i>
+                    <h3 class="mb-0">{{ pharmacy_list|length }}</h3>
+                    <p class="text-muted mb-0">Location{{ pharmacy_list|length|pluralize }} with Stock</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-dollar-sign fa-2x text-info mb-2"></i>
+                    <h3 class="mb-0">
+                        {% if pharmacy_list %}
+                            ${{ pharmacy_list.0.min_price|floatformat:2 }}+
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </h3>
+                    <p class="text-muted mb-0">Starting Price</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Map -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-map text-primary"></i> Pharmacy Locations</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="centerMap()">
+                    <i class="fas fa-crosshairs"></i> Center Map
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="map" style="height: 450px; width: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- Pharmacy List -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-list text-success"></i> Pharmacy Details</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if pharmacy_list %}
+                <div class="list-group list-group-flush">
+                    {% for pharmacy in pharmacy_list %}
+                    <div class="list-group-item pharmacy-item">
+                        <div class="row align-items-center">
+                            <!-- Pharmacy Info -->
+                            <div class="col-md-4">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-store-alt text-primary"></i>
+                                    {{ pharmacy.profile.pharmacy_name|default:pharmacy.pharmacist.username }}
+                                </h6>
+                                <p class="text-muted small mb-1">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ pharmacy.profile.address|default:"Address not available" }}
+                                </p>
+                                {% if pharmacy.profile.phone %}
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-phone"></i> {{ pharmacy.profile.phone }}
+                                </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Stock & Price Info -->
+                            <div class="col-md-3">
+                                <div class="stock-info">
+                                    <div class="mb-2">
+                                        <strong class="text-success">In Stock</strong>
+                                        <h5 class="mb-0 text-success">{{ pharmacy.total_stock }} units</h5>
+                                    </div>
+                            <!-- Price Info -->
+                            <div class="col-md-3">
+                                <div class="price-info">
+                                    {% if pharmacy.min_price %}
+                                        <small class="text-muted">Price</small>
+                                        <h4 class="mb-0 text-success">
+                                            {% if pharmacy.min_price == pharmacy.max_price %}
+                                                ${{ pharmacy.min_price|floatformat:2 }}
+                                            {% else %}
+                                                ${{ pharmacy.min_price|floatformat:2 }} - ${{ pharmacy.max_price|floatformat:2 }}
+                                            {% endif %}
+                                        </h4>
+                                        <small class="text-muted">per unit</small>
+                                    {% else %}
+                                        <small class="text-muted">Price not set</small>
+                                    {% endif %}
+                                </div>
+                            <!-- Actions -->
+                            <div class="col-md-2 text-end">
+                                <button class="btn btn-primary btn-sm" data-index="{{ forloop.counter0 }}" data-toggle="collapse" data-target="#pharmacy-details-{{ forloop.counter0 }}">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                {% if pharmacy.profile.latitude and pharmacy.profile.longitude %}
+                                <button class="btn btn-outline-secondary btn-sm mt-2" 
+                                    data-lat="{{ pharmacy.profile.latitude|default_if_none:'' }}" 
+                                    data-lng="{{ pharmacy.profile.longitude|default_if_none:'' }}" 
+                                    onclick="focusPharmacy(this.dataset.lat, this.dataset.lng)">
+                                    <i class="fas fa-map-pin"></i> Map
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Batch Details (Collapsible) -->
+                        <div class="collapse mt-3" id="pharmacy-details-{{ forloop.counter0 }}">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="mb-3">Available Batches:</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Batch Number</th>
+                                                    <th>Stock</th>
+                                                    <th>Price</th>
+                                                    <th>Expiry Date</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for batch_info in pharmacy.batches %}
+                                                <tr>
+                                                    <td><code>{{ batch_info.batch.batch_number }}</code></td>
+                                                    <td><span class="badge bg-success">{{ batch_info.stock }} units</span></td>
+                                                    <td>
+                                                        {% if batch_info.price %}
+                                                            <strong>${{ batch_info.price|floatformat:2 }}</strong>
+                                                        {% else %}
+                                                            <span class="text-muted">N/A</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ batch_info.batch.expiry_date|date:"M d, Y" }}</td>
+                                                    <td>
+                                                        {% if batch_info.batch.is_expired %}
+                                                            <span class="badge bg-danger">Expired</span>
+                                                        {% elif batch_info.batch.is_expiring_soon %}
+                                                            <span class="badge bg-warning text-dark">Expiring Soon</span>
+                                                        {% else %}
+                                                            <span class="badge bg-success">Fresh</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-circle fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Pharmacies Found</h4>
+                    <p class="text-muted">This medicine is currently not available at any pharmacy.</p>
+                    <a href="{% url 'frontend:medicine_catalog' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-arrow-left"></i> Browse Other Medicines
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<!-- Pharmacy Data for Map -->
+<script id="pharmacies-data" type="application/json">
+[
+{% for pharmacy in pharmacy_list %}
+    {
+        "name": "{{ pharmacy.profile.pharmacy_name|default:pharmacy.pharmacist.username|escapejs }}",
+        "address": "{{ pharmacy.profile.address|default:'Address not available'|escapejs }}",
+        "phone": "{{ pharmacy.profile.phone|default:''|escapejs }}",
+        "lat": {{ pharmacy.profile.latitude|default:'null' }},
+        "lng": {{ pharmacy.profile.longitude|default:'null' }},
+        "stock": {{ pharmacy.total_stock }},
+        "price": {% if pharmacy.min_price %}"${{ pharmacy.min_price|floatformat:2 }}"{% else %}null{% endif %}
+    }{% if not forloop.last %},{% endif %}
+{% endfor %}
+]
+</script>
+
+<script>
+let map, markers = [];
+
+// Initialize map
+function initMap() {
+    map = L.map('map').setView([9.0108, 38.7613], 12);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const pharmaciesRaw = JSON.parse(document.getElementById('pharmacies-data').textContent);
+    const pharmacies = pharmaciesRaw.filter(ph => ph.lat !== null && ph.lng !== null);
+    
+    if (pharmacies.length > 0) {
+        pharmacies.forEach((ph, idx) => {
+            const marker = L.marker([ph.lat, ph.lng]).addTo(map);
+            
+            const popupContent = `
+                <div style="min-width: 200px;">
+                    <h6 class="mb-2"><strong>${ph.name}</strong></h6>
+                    <p class="mb-1 small"><i class="fas fa-map-marker-alt"></i> ${ph.address}</p>
+                    ${ph.phone ? `<p class="mb-1 small"><i class="fas fa-phone"></i> ${ph.phone}</p>` : ''}
+                    <p class="mb-1 small"><i class="fas fa-boxes"></i> Stock: <strong>${ph.stock} units</strong></p>
+                    ${ph.price ? `<p class="mb-0 small"><i class="fas fa-dollar-sign"></i> Price: <strong>${ph.price}</strong></p>` : ''}
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            markers.push(marker);
+        });
+        
+        // Fit map to show all markers
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+}
+
+function centerMap() {
+    if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+}
+
+function focusPharmacy(lat, lng) {
+    // Coerce to numbers and validate
+    const latNum = typeof lat === 'number' ? lat : parseFloat(lat);
+    const lngNum = typeof lng === 'number' ? lng : parseFloat(lng);
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+        return; // Invalid coordinates; do nothing
+    }
+
+    map.setView([latNum, lngNum], 15);
+    // Open popup of the marker at this location
+    markers.forEach(marker => {
+        const markerPos = marker.getLatLng();
+        if (Math.abs(markerPos.lat - latNum) < 0.0001 && Math.abs(markerPos.lng - lngNum) < 0.0001) {
+            marker.openPopup();
+        }
+    });
+}
+
+function viewPharmacyDetails(index) {
+    const detailsDiv = document.getElementById(`pharmacy-details-${index}`);
+    const bsCollapse = new bootstrap.Collapse(detailsDiv, { toggle: true });
+}
+
+// Initialize map when page loads
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+
+<style>
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.stat-card {
+    border-width: 2px;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+
+.pharmacy-item {
+    transition: background-color 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.pharmacy-item:hover {
+    background-color: #f8f9fa;
+    border-left-color: #28a745;
+}
+
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+#map {
+    border-radius: 0 0 0.375rem 0.375rem;
+}
+
+.leaflet-popup-content {
+    margin: 10px;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+}
+
+.card-header {
+    border-bottom: 2px solid #e9ecef;
+}
+</style>
+{% endblock %}

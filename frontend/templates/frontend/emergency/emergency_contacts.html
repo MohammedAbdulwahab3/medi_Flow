@@ -1,0 +1,789 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Emergency Contacts{% endblock %}
+
+{% block extra_css %}
+<style>
+    .emergency-hero {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .emergency-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="emergency-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><polygon points="10,2 18,18 2,18" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23emergency-pattern)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .emergency-container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .emergency-card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        border-left: 5px solid #dc3545;
+    }
+    
+    .emergency-card.urgent {
+        border-left-color: #ffc107;
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    }
+    
+    .emergency-card.critical {
+        border-left-color: #dc3545;
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    }
+    
+    .emergency-button {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        border-radius: 15px;
+        padding: 1rem 2rem;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+    
+    .emergency-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(220, 53, 69, 0.4);
+        color: white;
+    }
+    
+    .emergency-button:active {
+        transform: translateY(-1px);
+    }
+    
+    .contact-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        border-left: 4px solid #28a745;
+    }
+    
+    .contact-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    
+    .contact-card.emergency {
+        border-left-color: #dc3545;
+    }
+    
+    .contact-card.medical {
+        border-left-color: #17a2b8;
+    }
+    
+    .contact-card.family {
+        border-left-color: #6f42c1;
+    }
+    
+    .contact-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+    
+    .contact-icon.emergency {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+    
+    .contact-icon.medical {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    }
+    
+    .contact-icon.family {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+    }
+    
+    .contact-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+    
+    .contact-relation {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .contact-info {
+        color: #495057;
+        font-size: 0.9rem;
+    }
+    
+    .contact-actions {
+        margin-top: 1rem;
+    }
+    
+    .contact-btn {
+        background: transparent;
+        border: 2px solid #667eea;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        color: #667eea;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .contact-btn:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .contact-btn.emergency {
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    
+    .contact-btn.emergency:hover {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .quick-actions {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .quick-action {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-left: 4px solid #28a745;
+    }
+    
+    .quick-action:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    .quick-action.emergency {
+        border-left-color: #dc3545;
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    }
+    
+    .quick-action.medical {
+        border-left-color: #17a2b8;
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    }
+    
+    .action-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-right: 1rem;
+    }
+    
+    .action-icon.emergency {
+        background: #dc3545;
+    }
+    
+    .action-icon.medical {
+        background: #17a2b8;
+    }
+    
+    .action-title {
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+    
+    .action-description {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    
+    .medical-info {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .info-value {
+        color: #6c757d;
+    }
+    
+    .info-value.important {
+        color: #dc3545;
+        font-weight: 700;
+    }
+    
+    .emergency-form {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    .btn-save {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .alert-emergency {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border: 2px solid #dc3545;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .alert-emergency .alert-title {
+        color: #dc3545;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .alert-emergency .alert-text {
+        color: #721c24;
+        margin-bottom: 0;
+    }
+    
+    .floating-emergency {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 70px;
+        height: 70px;
+        font-size: 1.5rem;
+        box-shadow: 0 10px 30px rgba(220, 53, 69, 0.4);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        animation: pulse 2s infinite;
+    }
+    
+    .floating-emergency:hover {
+        transform: scale(1.1);
+        box-shadow: 0 15px 40px rgba(220, 53, 69, 0.5);
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 10px 30px rgba(220, 53, 69, 0.4); }
+        50% { box-shadow: 0 10px 30px rgba(220, 53, 69, 0.6); }
+        100% { box-shadow: 0 10px 30px rgba(220, 53, 69, 0.4); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Emergency Hero -->
+<div class="emergency-hero">
+    <div class="container">
+        <div class="emergency-container text-center">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-exclamation-triangle me-3"></i>Emergency Contacts
+            </h1>
+            <p class="lead mb-4">Quick access to emergency services and important contacts</p>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Emergency Alert -->
+    <div class="alert-emergency">
+        <div class="alert-title">
+            <i class="fas fa-exclamation-triangle me-2"></i>Emergency Alert
+        </div>
+        <div class="alert-text">
+            In case of medical emergency, call 911 immediately. This system is for non-emergency contact management only.
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-md-4">
+            <div class="quick-actions">
+                <h5 class="mb-3">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+                
+                <div class="quick-action emergency" onclick="callEmergency()">
+                    <div class="d-flex align-items-center">
+                        <div class="action-icon emergency">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div>
+                            <div class="action-title">Call 911</div>
+                            <div class="action-description">Emergency services</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quick-action medical" onclick="callPoisonControl()">
+                    <div class="d-flex align-items-center">
+                        <div class="action-icon medical">
+                            <i class="fas fa-skull-crossbones"></i>
+                        </div>
+                        <div>
+                            <div class="action-title">Poison Control</div>
+                            <div class="action-description">1-800-222-1222</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quick-action" onclick="callDoctor()">
+                    <div class="d-flex align-items-center">
+                        <div class="action-icon">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div>
+                            <div class="action-title">Call Doctor</div>
+                            <div class="action-description">Primary care physician</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quick-action" onclick="sendLocation()">
+                    <div class="d-flex align-items-center">
+                        <div class="action-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div>
+                            <div class="action-title">Send Location</div>
+                            <div class="action-description">Share current location</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Medical Information -->
+            <div class="medical-info">
+                <h5 class="mb-3">
+                    <i class="fas fa-heartbeat me-2"></i>Medical Information
+                </h5>
+                
+                <div class="info-item">
+                    <span class="info-label">Blood Type:</span>
+                    <span class="info-value important">O+</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Allergies:</span>
+                    <span class="info-value important">Penicillin, Shellfish</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Current Medications:</span>
+                    <span class="info-value">Aspirin, Vitamin D</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Chronic Conditions:</span>
+                    <span class="info-value">Hypertension</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Insurance:</span>
+                    <span class="info-value">Blue Cross Blue Shield</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Contacts -->
+        <div class="col-md-8">
+            <div class="emergency-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-address-book me-2"></i>Emergency Contacts
+                </h5>
+                
+                <!-- Emergency Contact -->
+                <div class="contact-card emergency">
+                    <div class="d-flex align-items-center">
+                        <div class="contact-icon emergency">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="contact-name">Emergency Contact</div>
+                            <div class="contact-relation">Primary Emergency Contact</div>
+                            <div class="contact-info">
+                                <i class="fas fa-phone me-2"></i>{{ emergency_info.primary_contact|default:"Not set" }}
+                            </div>
+                        </div>
+                        <div class="contact-actions">
+                            <button class="contact-btn emergency" onclick="callContact('{{ emergency_info.primary_contact|default:"" }}')">
+                                <i class="fas fa-phone me-1"></i>Call
+                            </button>
+                            <button class="contact-btn" onclick="editContact('emergency')">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Family Contacts -->
+                <div class="contact-card family">
+                    <div class="d-flex align-items-center">
+                        <div class="contact-icon family">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="contact-name">Sarah Johnson</div>
+                            <div class="contact-relation">Spouse</div>
+                            <div class="contact-info">
+                                <i class="fas fa-phone me-2"></i>(555) 123-4567<br>
+                                <i class="fas fa-envelope me-2"></i>sarah.johnson@email.com
+                            </div>
+                        </div>
+                        <div class="contact-actions">
+                            <button class="contact-btn" onclick="callContact('(555) 123-4567')">
+                                <i class="fas fa-phone me-1"></i>Call
+                            </button>
+                            <button class="contact-btn" onclick="textContact('(555) 123-4567')">
+                                <i class="fas fa-sms me-1"></i>Text
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="contact-card family">
+                    <div class="d-flex align-items-center">
+                        <div class="contact-icon family">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="contact-name">Michael Johnson</div>
+                            <div class="contact-relation">Son</div>
+                            <div class="contact-info">
+                                <i class="fas fa-phone me-2"></i>(555) 987-6543<br>
+                                <i class="fas fa-envelope me-2"></i>michael.johnson@email.com
+                            </div>
+                        </div>
+                        <div class="contact-actions">
+                            <button class="contact-btn" onclick="callContact('(555) 987-6543')">
+                                <i class="fas fa-phone me-1"></i>Call
+                            </button>
+                            <button class="contact-btn" onclick="textContact('(555) 987-6543')">
+                                <i class="fas fa-sms me-1"></i>Text
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Medical Contacts -->
+                <div class="contact-card medical">
+                    <div class="d-flex align-items-center">
+                        <div class="contact-icon medical">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="contact-name">Dr. Emily Smith</div>
+                            <div class="contact-relation">Primary Care Physician</div>
+                            <div class="contact-info">
+                                <i class="fas fa-phone me-2"></i>(555) 456-7890<br>
+                                <i class="fas fa-map-marker-alt me-2"></i>123 Medical Center Dr
+                            </div>
+                        </div>
+                        <div class="contact-actions">
+                            <button class="contact-btn" onclick="callContact('(555) 456-7890')">
+                                <i class="fas fa-phone me-1"></i>Call
+                            </button>
+                            <button class="contact-btn" onclick="scheduleAppointment()">
+                                <i class="fas fa-calendar me-1"></i>Schedule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="contact-card medical">
+                    <div class="d-flex align-items-center">
+                        <div class="contact-icon medical">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="contact-name">Dr. Robert Wilson</div>
+                            <div class="contact-relation">Cardiologist</div>
+                            <div class="contact-info">
+                                <i class="fas fa-phone me-2"></i>(555) 789-0123<br>
+                                <i class="fas fa-map-marker-alt me-2"></i>456 Heart Center Blvd
+                            </div>
+                        </div>
+                        <div class="contact-actions">
+                            <button class="contact-btn" onclick="callContact('(555) 789-0123')">
+                                <i class="fas fa-phone me-1"></i>Call
+                            </button>
+                            <button class="contact-btn" onclick="scheduleAppointment()">
+                                <i class="fas fa-calendar me-1"></i>Schedule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Update Emergency Contact Form -->
+            <div class="emergency-form">
+                <h5 class="mb-3">
+                    <i class="fas fa-edit me-2"></i>Update Emergency Contact
+                </h5>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="form-label">Emergency Contact</label>
+                        <input type="text" class="form-control" name="emergency_contact" 
+                               value="{{ emergency_info.primary_contact }}" 
+                               placeholder="Enter emergency contact phone number">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-save">
+                        <i class="fas fa-save me-2"></i>Update Emergency Contact
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Emergency Button -->
+<button class="floating-emergency" onclick="emergencyMode()">
+    <i class="fas fa-exclamation-triangle"></i>
+</button>
+
+<!-- Emergency Mode Modal -->
+<div class="modal fade" id="emergencyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Emergency Mode
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+                    <h4 class="text-danger">Emergency Mode Activated</h4>
+                    <p class="text-muted">Quick access to emergency services and contacts</p>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <button class="btn btn-danger btn-lg w-100" onclick="callEmergency()">
+                            <i class="fas fa-phone me-2"></i>Call 911
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-warning btn-lg w-100" onclick="callPoisonControl()">
+                            <i class="fas fa-skull-crossbones me-2"></i>Poison Control
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-info btn-lg w-100" onclick="callDoctor()">
+                            <i class="fas fa-user-md me-2"></i>Call Doctor
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-success btn-lg w-100" onclick="sendLocation()">
+                            <i class="fas fa-map-marker-alt me-2"></i>Send Location
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Recent Emergency Contacts:</h6>
+                    <div class="list-group">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Emergency Contact
+                            <button class="btn btn-outline-danger btn-sm" onclick="callContact('{{ emergency_info.primary_contact|default:"" }}')">
+                                <i class="fas fa-phone"></i>
+                            </button>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Dr. Emily Smith
+                            <button class="btn btn-outline-info btn-sm" onclick="callContact('(555) 456-7890')">
+                                <i class="fas fa-phone"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function callEmergency() {
+    if (confirm('Are you sure you want to call 911? This is for emergencies only.')) {
+        window.location.href = 'tel:911';
+    }
+}
+
+function callPoisonControl() {
+    window.location.href = 'tel:1-800-222-1222';
+}
+
+function callDoctor() {
+    window.location.href = 'tel:(555) 456-7890';
+}
+
+function callContact(phoneNumber) {
+    if (phoneNumber) {
+        window.location.href = 'tel:' + phoneNumber;
+    } else {
+        alert('Phone number not available');
+    }
+}
+
+function textContact(phoneNumber) {
+    if (phoneNumber) {
+        window.location.href = 'sms:' + phoneNumber;
+    } else {
+        alert('Phone number not available');
+    }
+}
+
+function sendLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const message = `Emergency: My location is https://maps.google.com/?q=${lat},${lng}`;
+            
+            // Send to emergency contact
+            const emergencyContact = '{{ emergency_info.primary_contact|default:"" }}';
+            if (emergencyContact) {
+                window.location.href = 'sms:' + emergencyContact + '?body=' + encodeURIComponent(message);
+            } else {
+                alert('Emergency contact not set. Please update your emergency contact information.');
+            }
+        });
+    } else {
+        alert('Geolocation is not supported by this browser.');
+    }
+}
+
+function scheduleAppointment() {
+    window.location.href = '{% url "frontend:appointment_scheduler" %}';
+}
+
+function emergencyMode() {
+    const modal = new bootstrap.Modal(document.getElementById('emergencyModal'));
+    modal.show();
+}
+
+function editContact(type) {
+    if (type === 'emergency') {
+        document.querySelector('input[name="emergency_contact"]').focus();
+    }
+}
+
+// Auto-refresh emergency contacts every 5 minutes
+setInterval(function() {
+    // In a real application, you might want to refresh the contact list
+    console.log('Refreshing emergency contacts...');
+}, 300000);
+</script>
+{% endblock %}

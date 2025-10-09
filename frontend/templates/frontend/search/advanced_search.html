@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Advanced Search{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .search-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .search-container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .search-input {
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50px;
+        padding: 1rem 2rem;
+        color: white;
+        font-size: 1.2rem;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        background: rgba(255,255,255,0.25);
+        border-color: rgba(255,255,255,0.5);
+        box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25);
+        color: white;
+    }
+    
+    .search-input::placeholder {
+        color: rgba(255,255,255,0.7);
+    }
+    
+    .search-type-selector {
+        background: rgba(255,255,255,0.1);
+        border-radius: 15px;
+        padding: 0.5rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    .search-type-btn {
+        background: transparent;
+        border: none;
+        color: rgba(255,255,255,0.7);
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .search-type-btn.active {
+        background: rgba(255,255,255,0.2);
+        color: white;
+    }
+    
+    .search-results {
+        margin-top: 2rem;
+    }
+    
+    .result-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border-left: 4px solid #667eea;
+    }
+    
+    .result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    
+    .result-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .result-subtitle {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .result-description {
+        color: #495057;
+        line-height: 1.6;
+    }
+    
+    .result-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .no-results i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+    
+    .search-suggestions {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .suggestion-item {
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    
+    .suggestion-item:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+    }
+    
+    .recent-searches {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .recent-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+        color: #6c757d;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+    
+    .recent-item:hover {
+        color: #667eea;
+    }
+    
+    .recent-item:last-child {
+        border-bottom: none;
+    }
+    
+    .search-filters {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .filter-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .filter-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .search-stats {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .search-stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .search-stats-label {
+        opacity: 0.8;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Search Hero Section -->
+<div class="search-hero">
+    <div class="container">
+        <div class="search-container text-center">
+            <h1 class="display-4 mb-4">
+                <i class="fas fa-search me-3"></i>Advanced Search
+            </h1>
+            <p class="lead mb-4">Find medicines, users, prescriptions, and more with our powerful search engine</p>
+            
+            <form method="get" class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="input-group input-group-lg">
+                        <input type="text" 
+                               class="form-control search-input" 
+                               name="q" 
+                               value="{{ query }}"
+                               placeholder="Search for medicines, users, prescriptions..."
+                               autocomplete="off">
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Search Type Selector -->
+            <div class="search-type-selector d-inline-flex mt-4">
+                <button class="search-type-btn {% if search_type == 'all' %}active{% endif %}" 
+                        onclick="setSearchType('all')">
+                    <i class="fas fa-globe me-2"></i>All
+                </button>
+                <button class="search-type-btn {% if search_type == 'medicines' %}active{% endif %}" 
+                        onclick="setSearchType('medicines')">
+                    <i class="fas fa-pills me-2"></i>Medicines
+                </button>
+                <button class="search-type-btn {% if search_type == 'users' %}active{% endif %}" 
+                        onclick="setSearchType('users')">
+                    <i class="fas fa-users me-2"></i>Users
+                </button>
+                <button class="search-type-btn {% if search_type == 'prescriptions' %}active{% endif %}" 
+                        onclick="setSearchType('prescriptions')">
+                    <i class="fas fa-prescription me-2"></i>Prescriptions
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Search Filters -->
+        <div class="col-md-3">
+            <div class="search-filters">
+                <h5 class="mb-3">
+                    <i class="fas fa-filter me-2"></i>Filters
+                </h5>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Category</label>
+                    <select class="filter-select" name="category">
+                        <option value="">All Categories</option>
+                        <option value="antibiotic">Antibiotic</option>
+                        <option value="painkiller">Painkiller</option>
+                        <option value="vitamin">Vitamin</option>
+                        <option value="supplement">Supplement</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Date Range</label>
+                    <select class="filter-select" name="date_range">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Recent Searches -->
+            <div class="recent-searches">
+                <h5 class="mb-3">
+                    <i class="fas fa-history me-2"></i>Recent Searches
+                </h5>
+                <div class="recent-item">Aspirin</div>
+                <div class="recent-item">Dr. Smith</div>
+                <div class="recent-item">Pain relief</div>
+                <div class="recent-item">Vitamin D</div>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div class="col-md-9">
+            {% if query %}
+                <!-- Search Stats -->
+                <div class="search-stats">
+                    <div class="search-stats-number">
+                        {% if results %}
+                            {% for key, items in results.items %}
+                                {{ items|length }}{% if not forloop.last %} + {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
+                    <div class="search-stats-label">Results Found</div>
+                </div>
+
+                <!-- Results -->
+                <div class="search-results">
+                    {% if results %}
+                        {% for result_type, items in results.items %}
+                            {% if items %}
+                                <h4 class="mb-3">
+                                    <i class="fas fa-{% if result_type == 'medicines' %}pills{% elif result_type == 'users' %}users{% elif result_type == 'prescriptions' %}prescription{% else %}file{% endif %} me-2"></i>
+                                    {{ result_type|title }}
+                                </h4>
+                                
+                                {% for item in items %}
+                                    <div class="result-card">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="result-title">
+                                                    {% if result_type == 'medicines' %}
+                                                        {{ item.name }}
+                                                    {% elif result_type == 'users' %}
+                                                        {{ item.full_name|default:item.username }}
+                                                    {% elif result_type == 'prescriptions' %}
+                                                        {{ item.medicine.name }} - {{ item.patient.full_name|default:item.patient.username }}
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <div class="result-subtitle">
+                                                    {% if result_type == 'medicines' %}
+                                                        {{ item.generic_name }} • {{ item.category|title }}
+                                                    {% elif result_type == 'users' %}
+                                                        {{ item.get_role_display }} • {{ item.email }}
+                                                    {% elif result_type == 'prescriptions' %}
+                                                        Prescribed by {{ item.doctor.full_name|default:item.doctor.username }} • {{ item.prescribed_date|date:"M d, Y" }}
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <div class="result-description">
+                                                    {% if result_type == 'medicines' %}
+                                                        {{ item.description|truncatewords:20 }}
+                                                    {% elif result_type == 'users' %}
+                                                        {{ item.address|default:"No address provided" }}
+                                                    {% elif result_type == 'prescriptions' %}
+                                                        {{ item.notes|truncatewords:15|default:"No notes" }}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="ms-3">
+                                                <span class="result-badge">
+                                                    {% if result_type == 'medicines' %}
+                                                        Medicine
+                                                    {% elif result_type == 'users' %}
+                                                        {{ item.get_role_display }}
+                                                    {% elif result_type == 'prescriptions' %}
+                                                        {{ item.status|title }}
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="no-results">
+                            <i class="fas fa-search"></i>
+                            <h4>No results found</h4>
+                            <p>Try adjusting your search terms or filters</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- Search Suggestions -->
+                <div class="search-suggestions">
+                    <h5 class="mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>Search Suggestions
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Popular Medicines</h6>
+                            <div class="suggestion-item">Aspirin</div>
+                            <div class="suggestion-item">Paracetamol</div>
+                            <div class="suggestion-item">Ibuprofen</div>
+                            <div class="suggestion-item">Vitamin D</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Common Searches</h6>
+                            <div class="suggestion-item">Pain relief</div>
+                            <div class="suggestion-item">Antibiotics</div>
+                            <div class="suggestion-item">Vitamins</div>
+                            <div class="suggestion-item">Supplements</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="search-suggestions">
+                    <h5 class="mb-3">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{% url 'frontend:medicine_catalog' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-pills me-2"></i>Browse Medicines
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'frontend:analytics_dashboard' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-chart-line me-2"></i>View Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'frontend:bulk_operations' %}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-tasks me-2"></i>Bulk Operations
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function setSearchType(type) {
+    // Update active button
+    document.querySelectorAll('.search-type-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Update hidden input
+    const form = document.querySelector('form');
+    let typeInput = form.querySelector('input[name="type"]');
+    if (!typeInput) {
+        typeInput = document.createElement('input');
+        typeInput.type = 'hidden';
+        typeInput.name = 'type';
+        form.appendChild(typeInput);
+    }
+    typeInput.value = type;
+    
+    // Submit form
+    form.submit();
+}
+
+// Add click handlers to suggestion items
+document.querySelectorAll('.suggestion-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const searchInput = document.querySelector('input[name="q"]');
+        searchInput.value = this.textContent.trim();
+        document.querySelector('form').submit();
+    });
+});
+
+// Add click handlers to recent searches
+document.querySelectorAll('.recent-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const searchInput = document.querySelector('input[name="q"]');
+        searchInput.value = this.textContent.trim();
+        document.querySelector('form').submit();
+    });
+});
+</script>
+{% endblock %}

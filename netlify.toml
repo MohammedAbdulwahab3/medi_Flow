@@ -1,0 +1,27 @@
+[build]
+  command = "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+  publish = "staticfiles"
+  functions = "netlify/functions"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
+  DJANGO_SETTINGS_MODULE = "medi_flow.settings"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions.api]
+  runtime = "python3.9"
+
+[context.production.environment]
+  DEBUG = "False"
+  SECRET_KEY = "your-production-secret-key-here"
+  DATABASE_URL = "your-production-database-url"
+  ALLOWED_HOSTS = "your-netlify-site.netlify.app"

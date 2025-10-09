@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sales Analytics{% endblock %}
+
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-chart-bar"></i> Sales Analytics</h2>
+            <p class="text-muted">Comprehensive sales reports and analysis</p>
+        </div>
+    </div>
+
+    <!-- Period Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Period</label>
+                    <select name="period" class="form-control" id="periodSelect">
+                        <option value="day" {% if period == 'day' %}selected{% endif %}>Today</option>
+                        <option value="week" {% if period == 'week' %}selected{% endif %}>Last 7 Days</option>
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Last 30 Days</option>
+                        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom Range</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="startDateGroup" style="display: {% if period == 'custom' %}block{% else %}none{% endif %};">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-3" id="endDateGroup" style="display: {% if period == 'custom' %}block{% else %}none{% endif %};">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <a href="{% url 'frontend:export_sales_report' %}?period={{ period }}" class="btn btn-success w-100" title="Export CSV">
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow h-100">
+                <div class="card-body">
+                    <h6 class="text-primary text-uppercase mb-1">Total Revenue</h6>
+                    <h3 class="font-weight-bold">${{ total_revenue }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-success shadow h-100">
+                <div class="card-body">
+                    <h6 class="text-success text-uppercase mb-1">Total Profit</h6>
+                    <h3 class="font-weight-bold">${{ total_profit }}</h3>
+                    <small class="text-muted">{{ profit_margin }}% margin</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-info shadow h-100">
+                <div class="card-body">
+                    <h6 class="text-info text-uppercase mb-1">Transactions</h6>
+                    <h3 class="font-weight-bold">{{ total_transactions }}</h3>
+                    <small class="text-muted">Avg: ${{ average_transaction }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow h-100">
+                <div class="card-body">
+                    <h6 class="text-warning text-uppercase mb-1">Customers</h6>
+                    <h3 class="font-weight-bold">{{ unique_customers }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Selling Medicines -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Top Selling Medicines</h6>
+        </div>
+        <div class="card-body">
+            {% if top_medicines %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Medicine</th>
+                            <th class="text-center">Qty Sold</th>
+                            <th class="text-right">Revenue</th>
+                            <th class="text-right">Profit</th>
+                            <th class="text-center">Margin</th>
+                            <th class="text-center">Transactions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in top_medicines %}
+                        <tr>
+                            <td><strong>{{ item.batch__medicine__name }}</strong></td>
+                            <td class="text-center">{{ item.total_quantity }}</td>
+                            <td class="text-right">${{ item.total_revenue }}</td>
+                            <td class="text-right text-success">${{ item.profit }}</td>
+                            <td class="text-center">
+                                <span class="badge {% if item.profit_margin > 30 %}badge-success{% elif item.profit_margin > 15 %}badge-info{% else %}badge-warning{% endif %}">
+                                    {{ item.profit_margin }}%
+                                </span>
+                            </td>
+                            <td class="text-center">{{ item.transaction_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No sales data available for this period.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Payment Methods & Customer Stats -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">Payment Methods</h6>
+                </div>
+                <div class="card-body">
+                    {% if payment_breakdown %}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th class="text-center">Count</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payment_breakdown %}
+                            <tr>
+                                <td>{{ payment.payment_method|title }}</td>
+                                <td class="text-center">{{ payment.count }}</td>
+                                <td class="text-right">${{ payment.total }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Customer Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td><strong>Unique Customers</strong></td>
+                                <td class="text-right">{{ unique_customers }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Prescription Sales</strong></td>
+                                <td class="text-right">{{ prescription_sales }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Over-the-Counter Sales</strong></td>
+                                <td class="text-right">{{ otc_sales }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Average per Customer</strong></td>
+                                <td class="text-right">
+                                    {% if unique_customers > 0 %}
+                                    ${% widthratio total_revenue unique_customers 1 %}
+                                    {% else %}
+                                    $0
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</main>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid #4e73df!important;
+}
+.border-left-success {
+    border-left: 4px solid #1cc88a!important;
+}
+.border-left-info {
+    border-left: 4px solid #36b9cc!important;
+}
+.border-left-warning {
+    border-left: 4px solid #f6c23e!important;
+}
+</style>
+
+<script>
+document.getElementById('periodSelect').addEventListener('change', function() {
+    const period = this.value;
+    const startDateGroup = document.getElementById('startDateGroup');
+    const endDateGroup = document.getElementById('endDateGroup');
+    
+    if (period === 'custom') {
+        startDateGroup.style.display = 'block';
+        endDateGroup.style.display = 'block';
+    } else {
+        startDateGroup.style.display = 'none';
+        endDateGroup.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

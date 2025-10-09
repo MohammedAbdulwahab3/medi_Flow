@@ -1,0 +1,549 @@
+{% load static %}
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}MediFlow - Prescription Management System{% endblock %}</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Modern prescription management system for healthcare professionals">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="MediFlow">
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="msapplication-config" content="{% static 'browserconfig.xml' %}">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Variable font for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom Global CSS -->
+    <link href="{% static 'css/global.css' %}" rel="stylesheet">
+    
+    <!-- Dark Mode CSS Variables -->
+    <style>
+        :root {
+            --bs-primary: #667eea;
+            --bs-secondary: #764ba2;
+            --bs-success: #28a745;
+            --bs-info: #17a2b8;
+            --bs-warning: #ffc107;
+            --bs-danger: #dc3545;
+            --bs-light: #f8f9fa;
+            --bs-dark: #212529;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #404040;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --border-color: #404040;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary) !important;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .navbar-brand, .nav-link {
+            color: var(--text-primary) !important;
+        }
+        
+        .dropdown-menu {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .dropdown-item {
+            color: var(--text-primary);
+        }
+        
+        .dropdown-item:hover {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .form-control {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .form-control:focus {
+            background-color: var(--bg-primary);
+            border-color: var(--bs-primary);
+            color: var(--text-primary);
+        }
+        
+        .btn-outline-primary {
+            border-color: var(--bs-primary);
+            color: var(--bs-primary);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            background-color: var(--bg-secondary);
+            transform: rotate(180deg);
+        }
+        
+        .notification-badge {
+            position: relative;
+        }
+        
+        .notification-badge::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            background: var(--bs-danger);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .floating-action-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            box-shadow: 0 10px 30px var(--shadow);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .floating-action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px var(--shadow);
+        }
+        
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--bs-warning);
+            color: var(--bs-dark);
+            text-align: center;
+            padding: 0.5rem;
+            z-index: 9999;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .offline-indicator.show {
+            transform: translateY(0);
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Offline Indicator -->
+    <div class="offline-indicator" id="offlineIndicator">
+        <i class="fas fa-wifi me-2"></i>You're offline. Some features may be limited.
+    </div>
+
+    <!-- Modern Navigation -->
+    <nav class="navbar navbar-expand-lg sticky-top shadow-sm">
+        <div class="container-fluid">
+            <!-- Brand -->
+            <a class="navbar-brand fw-bold" href="{% url 'frontend:home' %}">
+                <i class="fas fa-heartbeat me-2 text-primary"></i>MediFlow
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+            <!-- Navigation Links -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'frontend:home' %}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        {% if user.is_patient %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'frontend:patient_dashboard' %}">
+                                    <i class="fas fa-user me-1"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'frontend:medicine_catalog' %}">
+                                    <i class="fas fa-pills me-1"></i>Medicines
+                                </a>
+                            </li>
+                        {% elif user.is_doctor %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'frontend:doctor_dashboard' %}">
+                                    <i class="fas fa-user-md me-1"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'frontend:appointment_scheduler' %}">
+                                    <i class="fas fa-calendar me-1"></i>Appointments
+                                </a>
+                            </li>
+                        {% elif user.is_pharmacist %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'frontend:pharmacist_dashboard' %}">
+                                    <i class="fas fa-user-md me-1"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'frontend:bulk_operations' %}">
+                                    <i class="fas fa-tasks me-1"></i>Bulk Ops
+                                </a>
+                            </li>
+                        {% elif user.is_manufacturer %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'frontend:manufacturer_dashboard' %}">
+                                    <i class="fas fa-industry me-1"></i>Dashboard
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if user.is_staff %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'admin:index' %}">
+                                    <i class="fas fa-cog me-1"></i>Admin
+                                </a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'frontend:analytics_dashboard' %}">
+                                <i class="fas fa-chart-line me-1"></i>Analytics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'frontend:advanced_search' %}">
+                                <i class="fas fa-search me-1"></i>Search
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Right Side Navigation -->
+                <ul class="navbar-nav">
+                    <!-- Theme Toggle -->
+                    <li class="nav-item">
+                        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                    </li>
+
+                    <!-- Notifications -->
+            {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link notification-badge" href="{% url 'prescription:notification_list' %}" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                        </a>
+                    </li>
+
+                    <!-- User Menu -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <div class="avatar me-2">
+                                <i class="fas fa-user-circle fa-lg"></i>
+                            </div>
+                            <div class="d-none d-md-block">
+                                <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
+                                <small class="text-muted">{{ user.get_role_display }}</small>
+                            </div>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'frontend:user_profile' %}">
+                                    <i class="fas fa-user me-2"></i>Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'frontend:change_password' %}">
+                                    <i class="fas fa-key me-2"></i>Change Password
+                                </a>
+                            </li>
+                            {% if user.is_patient %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'frontend:emergency_contacts' %}">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Emergency Contacts
+                                </a>
+                            </li>
+                            {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'authentication:logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'authentication:login' %}">
+                            <i class="fas fa-sign-in-alt me-1"></i>Sign In
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'authentication:signup' %}">
+                            <i class="fas fa-user-plus me-1"></i>Sign Up
+                        </a>
+                    </li>
+                    {% endif %}
+                    </ul>
+                </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating Action Button -->
+    {% if user.is_authenticated %}
+    <button class="floating-action-btn" onclick="showQuickActions()" title="Quick Actions">
+        <i class="fas fa-plus"></i>
+    </button>
+    {% endif %}
+
+    <!-- Quick Actions Modal -->
+    <div class="modal fade" id="quickActionsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <a href="{% url 'frontend:advanced_search' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-search"></i><br>Search
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{% url 'frontend:analytics_dashboard' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-chart-line"></i><br>Analytics
+                            </a>
+                        </div>
+                        {% if user.is_doctor %}
+                        <div class="col-6">
+                            <a href="{% url 'frontend:appointment_scheduler' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-calendar"></i><br>Schedule
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if user.is_pharmacist %}
+                        <div class="col-6">
+                            <a href="{% url 'frontend:bulk_operations' %}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-tasks"></i><br>Bulk Ops
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if user.is_patient %}
+                        <div class="col-6">
+                            <a href="{% url 'frontend:emergency_contacts' %}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-exclamation-triangle"></i><br>Emergency
+                            </a>
+                        </div>
+                        {% endif %}
+                        <div class="col-6">
+                            <a href="{% url 'frontend:user_profile' %}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-user"></i><br>Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('{% static "sw.js" %}')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(function(err) {
+                        console.log('ServiceWorker registration failed');
+                    });
+            });
+        }
+    </script>
+    
+    <!-- Theme and PWA JavaScript -->
+    <script>
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const currentTheme = html.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                html.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            html.setAttribute('data-theme', savedTheme);
+            themeIcon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        });
+        
+        // Quick Actions Modal
+        function showQuickActions() {
+            const modal = new bootstrap.Modal(document.getElementById('quickActionsModal'));
+            modal.show();
+        }
+        
+        // Offline Detection
+        function updateOnlineStatus() {
+            const indicator = document.getElementById('offlineIndicator');
+            if (navigator.onLine) {
+                indicator.classList.remove('show');
+            } else {
+                indicator.classList.add('show');
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        
+        // Initialize
+        updateOnlineStatus();
+        
+        // Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button or banner
+            const installBanner = document.createElement('div');
+            installBanner.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            installBanner.style.cssText = 'top: 80px; left: 20px; right: 20px; z-index: 1000;';
+            installBanner.innerHTML = `
+                <i class="fas fa-download me-2"></i>
+                Install MediFlow for a better experience!
+                <button type="button" class="btn btn-primary btn-sm ms-2" onclick="installApp()">Install</button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(installBanner);
+        });
+        
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+        
+        // Notification Permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        
+        // Show notification
+        function showNotification(title, body, icon) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: body,
+                    icon: icon || '{% static "favicon.ico" %}',
+                    badge: '{% static "favicon.ico" %}'
+                });
+            }
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

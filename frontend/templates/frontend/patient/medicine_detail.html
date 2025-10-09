@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:patient_dashboard' %}">
+                    <i class="fas fa-user"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_mine' %}">
+                    <i class="fas fa-prescription"></i> My Prescriptions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_history' %}">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="{% url 'frontend:medicine_catalog' %}">
+                    <i class="fas fa-pills"></i> Medicines
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="pt-3 pb-2 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'frontend:medicine_catalog' %}">Medicines</a></li>
+                <li class="breadcrumb-item active">{{ medicine.name }}</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Medicine Image and Basic Info -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm">
+                <div class="medicine-detail-image-container">
+                    {% if medicine.image %}
+                        <img src="{{ medicine.image }}" class="card-img-top" alt="{{ medicine.name }}"
+                             onerror="this.src='https://via.placeholder.com/400x400?text=No+Image'">
+                    {% else %}
+                        <img src="https://via.placeholder.com/400x400?text=No+Image" 
+                             class="card-img-top" alt="No image">
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title mb-3">{{ medicine.name }}</h3>
+                    
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-tag"></i> Category</span>
+                            <span class="info-value">{{ medicine.get_category_display }}</span>
+                        </div>
+                        
+                        {% if medicine.generic_name %}
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-pills"></i> Generic Name</span>
+                            <span class="info-value">{{ medicine.generic_name }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-dumbbell"></i> Strength</span>
+                            <span class="info-value">{{ medicine.strength|default:"N/A" }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-flask"></i> Form</span>
+                            <span class="info-value">{{ medicine.dosage_form|title|default:"N/A" }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-industry"></i> Manufacturer</span>
+                            <span class="info-value">{{ medicine.manufacturer.get_full_name|default:medicine.manufacturer.username }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Details and Actions -->
+        <div class="col-md-7">
+            <!-- Price and Availability Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3"><i class="fas fa-dollar-sign text-success"></i> Price Range</h5>
+                            {% if min_price %}
+                                <div class="price-large mb-2">
+                                    {% if min_price == max_price %}
+                                        ${{ min_price|floatformat:2 }}
+                                    {% else %}
+                                        ${{ min_price|floatformat:2 }} - ${{ max_price|floatformat:2 }}
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Price varies by pharmacy</small>
+                            {% else %}
+                                <p class="text-muted">Price information not available</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="mb-3"><i class="fas fa-warehouse text-primary"></i> Availability</h5>
+                            {% if total_available > 0 %}
+                                <div class="availability-large text-success mb-2">
+                                    {{ total_available }} units
+                                </div>
+                                <small class="text-muted">Available at {{ pharmacy_count }} pharmac{{ pharmacy_count|pluralize:"y,ies" }}</small>
+                            {% else %}
+                                <div class="text-danger mb-2">
+                                    <i class="fas fa-times-circle"></i> Out of Stock
+                                </div>
+                                <small class="text-muted">Not currently available</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description Card -->
+            {% if medicine.description %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Description</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ medicine.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if total_available > 0 %}
+                            <a href="{% url 'frontend:medicine_availability' medicine.id %}" 
+                               class="btn btn-success btn-lg">
+                                <i class="fas fa-map-marker-alt"></i> Find in Nearby Pharmacies
+                            </a>
+                        {% else %}
+                            <button class="btn btn-secondary btn-lg" disabled>
+                                <i class="fas fa-exclamation-triangle"></i> Currently Out of Stock
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'frontend:medicine_trace' medicine.id %}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-search-location"></i> Trace Supply Chain
+                        </a>
+                        
+                        <a href="{% url 'frontend:medicine_catalog' %}" 
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Catalog
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Batches Card -->
+            {% if recent_batches %}
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-boxes"></i> Recent Production Batches</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Batch #</th>
+                                    <th>Mfg. Date</th>
+                                    <th>Expiry</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in recent_batches %}
+                                <tr>
+                                    <td><code>{{ batch.batch_number }}</code></td>
+                                    <td>{{ batch.manufacturing_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {{ batch.expiry_date|date:"M d, Y" }}
+                                        {% if batch.is_expired %}
+                                            <span class="badge bg-danger">Expired</span>
+                                        {% elif batch.is_expiring_soon %}
+                                            <span class="badge bg-warning text-dark">Expiring Soon</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>${{ batch.selling_price|floatformat:2 }}</td>
+                                    <td>
+                                        {% if batch.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<style>
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.medicine-detail-image-container {
+    height: 400px;
+    overflow: hidden;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.medicine-detail-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.info-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.info-value {
+    font-weight: 500;
+    color: #212529;
+}
+
+.price-large {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #28a745;
+}
+
+.availability-large {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+}
+
+.card-header {
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0">Edit Medicine - {{ medicine.name }}</h5>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label" for="id_name">Name</label>
+              {{ form.name }}
+              {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="id_generic_name">Generic name</label>
+              {{ form.generic_name }}
+              {% if form.generic_name.errors %}<div class="invalid-feedback d-block">{{ form.generic_name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label" for="id_strength">Strength</label>
+                {{ form.strength }}
+                {% if form.strength.errors %}<div class="invalid-feedback d-block">{{ form.strength.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="id_dosage_form">Dosage form</label>
+                {{ form.dosage_form }}
+                {% if form.dosage_form.errors %}<div class="invalid-feedback d-block">{{ form.dosage_form.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="id_description">Description</label>
+              {{ form.description }}
+              {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="d-flex justify-content-end">
+              <a href="{% url 'frontend:medicine_list' %}" class="btn btn-secondary me-2">Cancel</a>
+              <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

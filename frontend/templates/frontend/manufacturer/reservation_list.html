@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">Requests</h1>
+        <a class="btn btn-outline-secondary" href="{% url 'frontend:manufacturer_dashboard' %}">Dashboard</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if requests %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Pharmacy</th>
+                            <th>Medicine</th>
+                            <th>Quantity</th>
+                            <th>Note</th>
+                            <th>Created</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in requests %}
+                        <tr>
+                            <td>{{ r.pharmacy.get_full_name|default:r.pharmacy.username }}</td>
+                            <td>{{ r.medicine.name }}</td>
+                            <td>{{ r.quantity }}</td>
+                            <td>{{ r.note|default:'-' }}</td>
+                            <td>{{ r.created_at|date:'Y-m-d H:i' }}</td>
+                            <td>
+                                {% if r.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif r.status == 'reserved' %}
+                                    <span class="badge bg-success">Reserved</span>
+                                {% elif r.status == 'transferred' %}
+                                    <span class="badge bg-info text-dark">Transferred</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if r.status == 'pending' %}
+                                    <a class="btn btn-sm btn-success" href="{% url 'frontend:manufacturer_respond_reservation' r.id 'accept' %}">Reserve</a>
+                                    <a class="btn btn-sm btn-danger" href="{% url 'frontend:manufacturer_respond_reservation' r.id 'reject' %}">Reject</a>
+                                {% else %}
+                                    <small class="text-muted">No actions</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <div>No requests found.</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

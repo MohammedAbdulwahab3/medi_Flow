@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pharmacist Dashboard - Enhanced{% endblock %}
+
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 p-lg-4 p-md-3 p-2">
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-fg-primary"><i class="fas fa-tachometer-alt text-brand-primary me-2"></i> Pharmacy Dashboard</h2>
+        <p class="text-muted d-none d-md-block mb-0">Real-time pharmacy management and analytics</p>
+    </div>
+
+    <!-- Main Dashboard Cards -->
+    <div class="row mb-lg-4 mb-md-3 mb-2 g-lg-4 g-md-3 g-2">
+        <!-- Card 1: Sales & Revenue -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card dashboard-card border-left-primary">
+                <div class="card-body">
+                    <div class="card-title text-primary-brand">Today's Sales</div>
+                    <div class="card-value">${{ today_revenue }}</div>
+                    <div class="card-text">
+                        <span class="badge bg-success">{{ today_transactions }} transactions</span>
+                    </div>
+                    <div class="card-footer-text mt-2">
+                        <span class="{% if revenue_change >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            <i class="fas fa-arrow-{% if revenue_change >= 0 %}up{% else %}down{% endif %} me-1"></i> 
+                            {{ revenue_change_abs }}% vs last week
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Profit & Margin -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card dashboard-card border-left-success">
+                <div class="card-body">
+                    <div class="card-title text-success">Today's Profit</div>
+                    <div class="card-value">${{ today_profit }}</div>
+                    <div class="card-text">
+                        <span class="badge bg-info">{{ profit_margin|floatformat:1 }}% margin</span>
+                    </div>
+                    <div class="card-footer-text mt-2">
+                        Total Inventory Value: ${{ inventory_value }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Stock Alerts -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card dashboard-card border-left-warning">
+                <div class="card-body">
+                    <div class="card-title text-warning">Stock Alerts</div>
+                    <div class="card-value">{{ low_stock_count }}</div>
+                    <div class="card-text">
+                        <span class="badge bg-danger">{{ expiring_count }} expiring soon</span>
+                    </div>
+                    <div class="card-footer-text mt-2">
+                        {{ expired_items }} expired | {{ critical_expiring }} critical
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Total Stock -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card dashboard-card border-left-info">
+                <div class="card-body">
+                    <div class="card-title text-accent">Total Stock</div>
+                    <div class="card-value">{{ total_stock_units }}</div>
+                    <div class="card-text">
+                        <span class="badge bg-primary-brand">{{ total_inventory_items }} unique items</span>
+                    </div>
+                    <div class="card-footer-text mt-2">
+                        {{ pending_reorder_count }} reorders pending
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row g-lg-4 g-md-3 g-2">
+        <!-- Left Column -->
+        <div class="col-lg-8 mb-4">
+            <!-- Low Stock Items -->
+            <div class="card shadow-md mb-lg-4 mb-md-3 mb-2" id="low-stock">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i> Low Stock Items
+                    </h6>
+                    <a href="{% url 'frontend:reorder_management' %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-plus me-1"></i> Manage Reorders
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if low_stock_items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Medicine</th>
+                                    <th>Batch</th>
+                                    <th class="text-center">Stock</th>
+                                    <th>Manufacturer</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.batch.medicine.name }}</strong><br>
+                                        <small class="text-muted">{{ item.batch.medicine.strength }}</small>
+                                    </td>
+                                    <td><small>{{ item.batch.batch_number }}</small></td>
+                                    <td class="text-center">
+                                        <span class="badge {% if item.current_stock <= 5 %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ item.current_stock }} units
+                                        </span>
+                                    </td>
+                                    <td><small>{{ item.batch.medicine.manufacturer.username }}</small></td>
+                                    <td class="text-end">
+                                        <a href="{% url 'frontend:pharmacist_medicine_search' %}?q={{ item.batch.medicine.name }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-shopping-cart me-1"></i> Reorder
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No low stock items. Great job!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Sales -->
+            <div class="card shadow-md mb-lg-4 mb-md-3 mb-2">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-shopping-bag me-2"></i> Recent Sales
+                    </h6>
+                    <a href="{% url 'frontend:sales_analytics' %}" class="btn btn-sm btn-success">View Analytics</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_sales %}
+                    <div class="list-group list-group-flush">
+                        {% for sale in recent_sales %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Sale #{{ sale.id }}</strong><br>
+                                    <small class="text-muted">
+                                        {{ sale.patient.full_name|default:"Walk-in" }} - 
+                                        {{ sale.sale_date|date:"M d, Y H:i" }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <h6 class="mb-0 text-success">${{ sale.total_amount }}</h6>
+                                    <small class="text-muted">{{ sale.get_payment_method_display }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No recent sales.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pending Prescriptions -->
+            <div class="card shadow-md mb-lg-4 mb-md-3 mb-2">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-prescription-bottle-alt me-2"></i> Pending Prescriptions
+                    </h6>
+                    <a href="{% url 'frontend:prescription_queue' %}" class="btn btn-sm btn-info">View Queue</a>
+                </div>
+                <div class="card-body">
+                    {% if pending_prescriptions %}
+                    <div class="list-group list-group-flush">
+                        {% for prescription in pending_prescriptions %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ prescription.medicine.name }}</strong> for 
+                                    <strong>{{ prescription.patient.full_name|default:prescription.patient.username }}</strong><br>
+                                    <small class="text-muted">
+                                        Prescribed by Dr. {{ prescription.doctor.full_name|default:prescription.doctor.username }} on 
+                                        {{ prescription.prescribed_date|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-warning">{{ prescription.quantity }} units</span>
+                                    <a href="{% url 'frontend:dispense_prescription' prescription.id %}" class="btn btn-sm btn-success ms-2">
+                                        <i class="fas fa-hand-holding-medical"></i> Dispense
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No pending prescriptions.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4 mb-4">
+            <!-- Expiring Soon -->
+            <div class="card shadow-md mb-lg-4 mb-md-3 mb-2" id="expiring">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-danger">
+                        <i class="fas fa-clock me-2"></i> Expiring Soon
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if expiring_soon %}
+                    <div class="list-group list-group-flush">
+                        {% for item in expiring_soon %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ item.batch.medicine.name }}</strong><br>
+                                    <small class="text-muted">
+                                        Batch: {{ item.batch.batch_number }}<br>
+                                        Stock: {{ item.current_stock }} units
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge {% if item.batch.expiry_date|timeuntil < '7 days' %}bg-danger{% else %}bg-warning{% endif %}">
+                                        Expires {{ item.batch.expiry_date|date:"M d" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No items expiring soon. Excellent!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Reorder Alerts -->
+            <div class="card shadow-md mb-lg-4 mb-md-3 mb-2">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-secondary">
+                        <i class="fas fa-redo me-2"></i> Reorder Alerts
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if pending_reorder_alerts %}
+                    <div class="list-group list-group-flush">
+                        {% for alert in pending_reorder_alerts %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong>{{ alert.pharmacy_inventory.batch.medicine.name }}</strong><br>
+                                    <small class="text-muted">
+                                        Stock: {{ alert.pharmacy_inventory.current_stock }} units<br>
+                                        Suggested: {{ alert.suggested_quantity }} units
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{% url 'frontend:create_reorder_request' alert.id %}" 
+                                   class="btn btn-sm btn-success flex-grow-1">
+                                    <i class="fas fa-check me-1"></i> Order
+                                </a>
+                                <a href="{% url 'frontend:dismiss_reorder_alert' alert.id %}" 
+                                   class="btn btn-sm btn-secondary flex-grow-1">
+                                    <i class="fas fa-times me-1"></i> Dismiss
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">No pending reorder alerts.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow-md mb-lg-4 mb-md-3 mb-2">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt me-2"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'frontend:prescription_queue' %}" class="btn btn-info btn-lg">
+                            <i class="fas fa-prescription me-2"></i> Prescription Queue
+                        </a>
+                        <a href="{% url 'frontend:sales_analytics' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-chart-bar me-2"></i> Sales Analytics
+                        </a>
+                        <a href="{% url 'frontend:pharmacist_inventory' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-boxes me-2"></i> Manage Inventory
+                        </a>
+                        <a href="{% url 'frontend:reorder_management' %}" class="btn btn-warning btn-lg">
+                            <i class="fas fa-redo me-2"></i> Reorder Management
+                        </a>
+                        <a href="{% url 'frontend:pharmacist_transfers' %}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-exchange-alt me-2"></i> View Transfers
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incoming Transfers -->
+            {% if incoming_transfers %}
+            <div class="card shadow-md mb-lg-4 mb-md-3 mb-2">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-truck me-2"></i> Incoming Transfers
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for transfer in incoming_transfers %}
+                        <div class="list-group-item px-0">
+                            <strong>{{ transfer.batch.medicine.name }}</strong><br>
+                            <small class="text-muted">
+                                {{ transfer.quantity }} units from {{ transfer.from_user.username }}<br>
+                                {{ transfer.transfer_date|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'frontend:pharmacist_transfers' %}" class="btn btn-sm btn-primary btn-block mt-3">
+                        View All Transfers
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</main>
+{% endblock %}

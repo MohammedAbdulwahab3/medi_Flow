@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Sign In - MediFlow{% endblock %}
+
+{% block content %}
+  <div class="admin-login-container">
+    <div class="admin-login-card">
+      <div class="admin-login-header">
+        <div class="mf-logo-large">MF</div>
+        <h1>MediFlow Admin</h1>
+        <p class="lead">Sign in to manage the MediFlow system</p>
+      </div>
+      {{ block.super }}
+    </div>
+  </div>
+{% endblock %}

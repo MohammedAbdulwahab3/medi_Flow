@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="#">
+                    <i class="fas fa-user"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_mine' %}">
+                    <i class="fas fa-prescription"></i> My Prescriptions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:patient_history' %}">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:medicine_catalog' %}">
+                    <i class="fas fa-pills"></i> Medicines
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:message_inbox' %}">
+                    <i class="fas fa-envelope"></i> Messages
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'prescription:notification_list' %}">
+                    <i class="fas fa-bell"></i> Notifications
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Patient Dashboard</h1>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="fas fa-prescription"></i> Total Prescriptions</h6>
+                    <h2>{{ total_prescriptions }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="fas fa-clock"></i> Pending</h6>
+                    <h2>{{ pending_prescriptions }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="fas fa-check"></i> Dispensed</h6>
+                    <h2>{{ dispensed_prescriptions }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Prescriptions -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-prescription"></i> Recent Prescriptions</h5>
+                    <a href="{% url 'prescription:patient_mine' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_prescriptions %}
+                        <div class="list-group">
+                            {% for prescription in recent_prescriptions %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ prescription.medicine.name }}</h6>
+                                        <small class="text-muted">
+                                            Prescribed by: Dr. {{ prescription.doctor.full_name|default:prescription.doctor.username }}
+                                            <br>
+                                            Dosage: {{ prescription.dosage }} | Duration: {{ prescription.duration }}
+                                            <br>
+                                            {% if prescription.status == 'pending' %}
+                                                <span class="badge bg-warning">{{ prescription.get_status_display }}</span>
+                                            {% elif prescription.status == 'dispensed' %}
+                                                <span class="badge bg-success">{{ prescription.get_status_display }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ prescription.get_status_display }}</span>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <small class="text-muted">{{ prescription.prescribed_date|date:"M d" }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent prescriptions found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- My Doctors -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user-md"></i> My Doctors</h5>
+                </div>
+                <div class="card-body">
+                    {% if assigned_doctors %}
+                        <div class="list-group">
+                            {% for assignment in assigned_doctors %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            Dr. {{ assignment.doctor.full_name|default:assignment.doctor.username }}
+                                            {% if assignment.is_primary %}<span class="badge bg-primary ms-2">Primary</span>{% endif %}
+                                        </h6>
+                                        <small class="text-muted">
+                                            {% if assignment.doctor.doctor_profile.specialization %}
+                                                {{ assignment.doctor.doctor_profile.specialization }}
+                                            {% endif %}
+                                            <br>
+                                            Assigned: {{ assignment.assigned_date|date:"M d, Y" }}
+                                        </small>
+                                    </div>
+                                    <a href="{% url 'prescription:message_compose' %}?recipient={{ assignment.doctor.id }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-envelope"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No doctors assigned yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Row -->
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-bell"></i> Recent Notifications</h5>
+                    <a href="{% url 'prescription:notification_list' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if unread_notifications %}
+                        <div class="list-group">
+                            {% for notification in unread_notifications %}
+                            <a href="{% url 'prescription:notification_mark_read' notification.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ notification.title }}</strong>
+                                        <br>
+                                        <small>{{ notification.message|truncatewords:20 }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No new notifications.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<style>
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.card {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    border: none;
+    border-radius: 0.35rem;
+}
+</style>
+{% endblock %}

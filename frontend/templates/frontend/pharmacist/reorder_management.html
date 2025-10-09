@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reorder Management{% endblock %}
+
+{% block content %}
+<!-- Include Sidebar -->
+{% include 'frontend/pharmacist/_sidebar.html' %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-redo"></i> Reorder Management</h2>
+    <p class="text-muted">Manage low stock alerts and reorder requests</p>
+
+    <!-- Status Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <label>Status Filter</label>
+                    <select name="status" class="form-control" onchange="this.form.submit()">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="ordered" {% if status_filter == 'ordered' %}selected{% endif %}>Ordered</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="dismissed" {% if status_filter == 'dismissed' %}selected{% endif %}>Dismissed</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alerts Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-warning">Reorder Alerts</h6>
+        </div>
+        <div class="card-body">
+            {% if alerts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Medicine</th>
+                            <th>Batch</th>
+                            <th class="text-center">Current Stock</th>
+                            <th class="text-center">Threshold</th>
+                            <th class="text-center">Suggested Qty</th>
+                            <th>Manufacturer</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        <tr>
+                            <td><strong>{{ alert.pharmacy_inventory.batch.medicine.name }}</strong></td>
+                            <td><small>{{ alert.pharmacy_inventory.batch.batch_number }}</small></td>
+                            <td class="text-center">
+                                <span class="badge badge-danger">{{ alert.pharmacy_inventory.current_stock }}</span>
+                            </td>
+                            <td class="text-center">{{ alert.threshold_quantity }}</td>
+                            <td class="text-center"><strong>{{ alert.suggested_quantity }}</strong></td>
+                            <td>{{ alert.pharmacy_inventory.batch.medicine.manufacturer.username }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if alert.status == 'pending' %}badge-warning
+                                    {% elif alert.status == 'ordered' %}badge-info
+                                    {% elif alert.status == 'completed' %}badge-success
+                                    {% else %}badge-secondary{% endif %}">
+                                    {{ alert.get_status_display }}
+                                </span>
+                            </td>
+                            <td><small>{{ alert.created_at|date:"M d, Y" }}</small></td>
+                            <td class="text-right">
+                                {% if alert.status == 'pending' %}
+                                <a href="{% url 'frontend:create_reorder_request' alert.id %}" class="btn btn-sm btn-success" title="Create Order">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </a>
+                                <a href="{% url 'frontend:dismiss_reorder_alert' alert.id %}" class="btn btn-sm btn-secondary" title="Dismiss">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% elif alert.reservation_request %}
+                                <a href="{% url 'frontend:pharmacist_reservations' %}" class="btn btn-sm btn-info">
+                                    View Request
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No reorder alerts found.</p>
+        {% endif %}
+        </div>
+    </div>
+</div>
+</main>
+{% endblock %}
