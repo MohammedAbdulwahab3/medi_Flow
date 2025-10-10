@@ -1,9 +1,370 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create User - MediFlow Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+  .admin-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--neutral-50) 0%, var(--brand-50) 100%);
+    padding: 2rem 0;
+  }
+  
+  .admin-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  
+  .admin-header {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-700) 100%);
+    color: var(--fg-light);
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+  }
+  
+  .admin-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+    opacity: 0.3;
+  }
+  
+  .admin-icon {
+    position: relative;
+    z-index: 1;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .admin-icon i {
+    font-size: 1.8rem;
+    color: var(--fg-light);
+  }
+  
+  .admin-title {
+    position: relative;
+    z-index: 1;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  
+  .admin-subtitle {
+    position: relative;
+    z-index: 1;
+    opacity: 0.9;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+  
+  .admin-body {
+    padding: 2.5rem 2rem;
+  }
+  
+  .form-floating {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-floating .form-control {
+    height: 3.5rem;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--neutral-200);
+    background: var(--bg-card);
+    transition: all 0.3s ease;
+  }
+  
+  .form-floating .form-control:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.1);
+    background: var(--bg-card);
+  }
+  
+  .form-floating label {
+    color: var(--fg-muted);
+    font-weight: 500;
+  }
+  
+  .form-select {
+    height: 3.5rem;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--neutral-200);
+    background: var(--bg-card);
+    transition: all 0.3s ease;
+  }
+  
+  .form-select:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.1);
+  }
+  
+  .btn-admin {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-700) 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--fg-light);
+    width: 100%;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-admin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn-admin:hover::before {
+    left: 100%;
+  }
+  
+  .btn-admin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+  }
+  
+  .error-message {
+    background: var(--danger-50);
+    border: 1px solid var(--danger-200);
+    color: var(--danger-700);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .form-error {
+    color: var(--danger-500);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+  
+  .form-row {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .form-row .form-floating {
+    flex: 1;
+  }
+  
+  .role-info {
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .role-info h6 {
+    color: var(--fg-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  
+  .role-info ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--fg-muted);
+  }
+  
+  .role-info li {
+    margin-bottom: 0.25rem;
+  }
+  
+  @media (max-width: 576px) {
+    .admin-container {
+      padding: 1rem 0;
+    }
+    
+    .admin-card {
+      margin: 0 1rem;
+    }
+    
+    .admin-header {
+      padding: 1.5rem;
+    }
+    
+    .admin-body {
+      padding: 2rem 1.5rem;
+    }
+    
+    .form-row {
+      flex-direction: column;
+      gap: 0;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-  <h2>Create user (admin only)</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Create</button>
-  </form>
+<div class="admin-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12">
+        <div class="admin-card">
+          <div class="admin-header">
+            <div class="admin-icon">
+              <i class="fas fa-user-plus"></i>
+            </div>
+            <h1 class="admin-title">Create New User</h1>
+            <p class="admin-subtitle">Add a new user to the MediFlow system</p>
+          </div>
+          
+          <div class="admin-body">
+            {% if form.errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Please correct the errors below and try again.
+              </div>
+            {% endif %}
+            
+            <form method="post" novalidate>
+              {% csrf_token %}
+              
+              <div class="form-row">
+                <div class="form-floating">
+                  <input type="text" 
+                         class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                         id="id_first_name" 
+                         name="first_name" 
+                         placeholder="First Name"
+                         value="{{ form.first_name.value|default:'' }}"
+                         required>
+                  <label for="id_first_name">
+                    <i class="fas fa-user me-2"></i>First Name
+                  </label>
+                  {% if form.first_name.errors %}
+                    <div class="form-error">
+                      {{ form.first_name.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+                
+                <div class="form-floating">
+                  <input type="text" 
+                         class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                         id="id_last_name" 
+                         name="last_name" 
+                         placeholder="Last Name"
+                         value="{{ form.last_name.value|default:'' }}"
+                         required>
+                  <label for="id_last_name">
+                    <i class="fas fa-user me-2"></i>Last Name
+                  </label>
+                  {% if form.last_name.errors %}
+                    <div class="form-error">
+                      {{ form.last_name.errors.0 }}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <div class="form-floating">
+                <input type="email" 
+                       class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                       id="id_email" 
+                       name="email" 
+                       placeholder="Email Address"
+                       value="{{ form.email.value|default:'' }}"
+                       required>
+                <label for="id_email">
+                  <i class="fas fa-envelope me-2"></i>Email Address
+                </label>
+                {% if form.email.errors %}
+                  <div class="form-error">
+                    {{ form.email.errors.0 }}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="form-floating">
+                <input type="text" 
+                       class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                       id="id_username" 
+                       name="username" 
+                       placeholder="Username"
+                       value="{{ form.username.value|default:'' }}"
+                       required>
+                <label for="id_username">
+                  <i class="fas fa-at me-2"></i>Username
+                </label>
+                {% if form.username.errors %}
+                  <div class="form-error">
+                    {{ form.username.errors.0 }}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="form-floating">
+                <select class="form-select {% if form.role.errors %}is-invalid{% endif %}" 
+                        id="id_role" 
+                        name="role" 
+                        required>
+                  <option value="">Select User Role</option>
+                  <option value="patient" {% if form.role.value == 'patient' %}selected{% endif %}>Patient</option>
+                  <option value="doctor" {% if form.role.value == 'doctor' %}selected{% endif %}>Doctor</option>
+                  <option value="pharmacist" {% if form.role.value == 'pharmacist' %}selected{% endif %}>Pharmacist</option>
+                  <option value="manufacturer" {% if form.role.value == 'manufacturer' %}selected{% endif %}>Manufacturer</option>
+                </select>
+                <label for="id_role">
+                  <i class="fas fa-user-tag me-2"></i>User Role
+                </label>
+                {% if form.role.errors %}
+                  <div class="form-error">
+                    {{ form.role.errors.0 }}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="role-info">
+                <h6><i class="fas fa-info-circle me-2"></i>Role Information</h6>
+                <ul>
+                  <li><strong>Patient:</strong> Can view medicines, manage prescriptions, and access personal health records</li>
+                  <li><strong>Doctor:</strong> Can create prescriptions, manage appointments, and access patient records</li>
+                  <li><strong>Pharmacist:</strong> Can manage inventory, process prescriptions, and handle bulk operations</li>
+                  <li><strong>Manufacturer:</strong> Can manage medicine inventory and update product information</li>
+                </ul>
+              </div>
+              
+              <button type="submit" class="btn btn-admin">
+                <i class="fas fa-user-plus me-2"></i>Create User
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

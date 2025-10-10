@@ -1,0 +1,540 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item active">{{ app_list.0.name }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-app-index">
+  <!-- App Header -->
+  <div class="app-header">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <div class="d-flex align-items-center">
+          <div class="app-icon-large">
+            {% if 'Authentication' in app_list.0.name %}
+              <i class="fas fa-users"></i>
+            {% elif 'Medicine' in app_list.0.name %}
+              <i class="fas fa-pills"></i>
+            {% elif 'Prescription' in app_list.0.name %}
+              <i class="fas fa-prescription"></i>
+            {% elif 'Inventory' in app_list.0.name %}
+              <i class="fas fa-warehouse"></i>
+            {% elif 'Api' in app_list.0.name %}
+              <i class="fas fa-code"></i>
+            {% else %}
+              <i class="fas fa-folder"></i>
+            {% endif %}
+          </div>
+          <div>
+            <h2 class="app-title">{{ app_list.0.name }}</h2>
+            <p class="app-description mb-0">
+              Manage all {{ app_list.0.name|lower }} related data and settings
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 text-end">
+        <a href="{% url 'admin:index' %}" class="btn btn-outline-primary">
+          <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Models Grid -->
+  <div class="models-grid">
+    <div class="row g-4">
+      {% for app in app_list %}
+        {% for model in app.models %}
+        <div class="col-lg-4 col-md-6">
+          <div class="model-card">
+            <!-- Model Header -->
+            <div class="model-card-header">
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                  <div class="model-icon">
+                    <i class="fas fa-table"></i>
+                  </div>
+                  <div>
+                    <h5 class="model-name">{{ model.name }}</h5>
+                    <p class="model-description mb-0">
+                      {{ model.object_name }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Model Actions -->
+            <div class="model-card-body">
+              <div class="model-actions-grid">
+                {% if model.admin_url %}
+                <a href="{{ model.admin_url }}" class="model-action-btn view">
+                  <div class="action-icon">
+                    <i class="fas fa-list"></i>
+                  </div>
+                  <div class="action-content">
+                    <div class="action-title">View All</div>
+                    <div class="action-subtitle">Browse records</div>
+                  </div>
+                  <i class="fas fa-chevron-right action-arrow"></i>
+                </a>
+                {% endif %}
+
+                {% if model.add_url %}
+                <a href="{{ model.add_url }}" class="model-action-btn add">
+                  <div class="action-icon">
+                    <i class="fas fa-plus"></i>
+                  </div>
+                  <div class="action-content">
+                    <div class="action-title">Add New</div>
+                    <div class="action-subtitle">Create record</div>
+                  </div>
+                  <i class="fas fa-chevron-right action-arrow"></i>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Model Footer (if permissions) -->
+            {% if model.perms %}
+            <div class="model-card-footer">
+              <div class="permissions-list">
+                {% if model.perms.add %}
+                <span class="permission-badge add">
+                  <i class="fas fa-plus-circle me-1"></i>Add
+                </span>
+                {% endif %}
+                {% if model.perms.change %}
+                <span class="permission-badge change">
+                  <i class="fas fa-edit me-1"></i>Edit
+                </span>
+                {% endif %}
+                {% if model.perms.delete %}
+                <span class="permission-badge delete">
+                  <i class="fas fa-trash me-1"></i>Delete
+                </span>
+                {% endif %}
+                {% if model.perms.view %}
+                <span class="permission-badge view">
+                  <i class="fas fa-eye me-1"></i>View
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Quick Stats (if available) -->
+  <div class="app-stats mt-5">
+    <h4 class="stats-title">
+      <i class="fas fa-chart-bar me-2"></i>Quick Statistics
+    </h4>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-primary">
+            <i class="fas fa-database"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ app_list.0.models|length }}</div>
+            <div class="stat-label">Total Models</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-success">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">Active</div>
+            <div class="stat-label">System Status</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-info">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">Full</div>
+            <div class="stat-label">Access Level</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-warning">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">Now</div>
+            <div class="stat-label">Last Updated</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* App Index Styles */
+.admin-app-index {
+  padding: 0;
+}
+
+.app-header {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.app-icon-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  margin-right: 1.5rem;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.app-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.app-description {
+  color: var(--fg-muted);
+  font-size: 1.1rem;
+}
+
+/* Models Grid */
+.models-grid {
+  margin-bottom: 2rem;
+}
+
+.model-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.model-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.model-card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.model-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-right: 1rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.model-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.model-description {
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+}
+
+.model-card-body {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.model-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.model-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 2px solid var(--border-color);
+  text-decoration: none;
+  color: var(--fg-primary);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.model-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.model-action-btn:hover {
+  border-color: var(--brand-primary);
+  transform: translateX(4px);
+}
+
+.model-action-btn:hover::before {
+  opacity: 1;
+}
+
+.model-action-btn .action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.model-action-btn.view .action-icon {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.model-action-btn.add .action-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.action-content {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.action-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--fg-primary);
+}
+
+.action-subtitle {
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+}
+
+.action-arrow {
+  color: var(--fg-muted);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.model-action-btn:hover .action-arrow {
+  color: var(--brand-primary);
+  transform: translateX(4px);
+}
+
+.model-card-footer {
+  background: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.permissions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.permission-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.permission-badge.add {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.permission-badge.change {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.permission-badge.delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.permission-badge.view {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* App Stats */
+.app-stats {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+}
+
+.stats-title {
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-bottom: 1.5rem;
+}
+
+.app-stats .stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.app-stats .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.app-stats .stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.app-stats .stat-icon.bg-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.app-stats .stat-icon.bg-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.app-stats .stat-icon.bg-info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.app-stats .stat-icon.bg-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.app-stats .stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+
+.app-stats .stat-label {
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 1.5rem;
+  }
+  
+  .app-icon-large {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+    margin-right: 1rem;
+  }
+  
+  .app-title {
+    font-size: 1.5rem;
+  }
+  
+  .app-description {
+    font-size: 0.95rem;
+  }
+  
+  .model-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Dark Mode */
+[data-theme="dark"] .app-header,
+[data-theme="dark"] .model-card,
+[data-theme="dark"] .app-stats,
+[data-theme="dark"] .app-stats .stat-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .model-card-header {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .model-card-footer {
+  background: var(--bg-tertiary);
+}
+</style>
+{% endblock %}

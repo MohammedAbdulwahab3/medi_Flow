@@ -1,0 +1,474 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item">
+  <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+</li>
+<li class="breadcrumb-item">
+  <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+</li>
+<li class="breadcrumb-item active">Delete {{ opts.verbose_name }}</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-delete-view">
+  <!-- Warning Header -->
+  <div class="delete-warning-header">
+    <div class="warning-icon">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <h2 class="warning-title">Confirm Deletion</h2>
+    <p class="warning-subtitle">
+      This action cannot be undone. Please review carefully before proceeding.
+    </p>
+  </div>
+
+  <!-- Delete Confirmation Card -->
+  <div class="delete-confirmation-card">
+    <div class="confirmation-header">
+      <h5>
+        <i class="fas fa-trash-alt me-2"></i>
+        Are you sure you want to delete this {{ opts.verbose_name|lower }}?
+      </h5>
+    </div>
+
+    <div class="confirmation-body">
+      <!-- Object Details -->
+      <div class="object-details">
+        <div class="object-icon">
+          <i class="fas fa-file-alt"></i>
+        </div>
+        <div class="object-info">
+          <div class="object-type">{{ opts.verbose_name|capfirst }}</div>
+          <div class="object-name">{{ object }}</div>
+        </div>
+      </div>
+
+      <!-- Related Objects Warning -->
+      {% if deleted_objects %}
+      <div class="related-objects-warning">
+        <div class="alert alert-warning">
+          <div class="d-flex align-items-start">
+            <i class="fas fa-link me-3 mt-1"></i>
+            <div class="flex-grow-1">
+              <h6 class="alert-heading mb-2">
+                <strong>Warning:</strong> Deleting this {{ opts.verbose_name|lower }} will also delete the following related items:
+              </h6>
+              <div class="related-objects-list">
+                <ul>
+                  {% for deletable_object in deleted_objects %}
+                  <li>{{ deletable_object }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Confirmation Form -->
+      <form method="post" class="delete-form">
+        {% csrf_token %}
+        <input type="hidden" name="post" value="yes">
+        
+        <!-- Confirmation Checkbox -->
+        <div class="confirmation-checkbox">
+          <div class="form-check">
+            <input class="form-check-input" 
+                   type="checkbox" 
+                   id="confirmDelete" 
+                   required>
+            <label class="form-check-label" for="confirmDelete">
+              I understand that this action is permanent and cannot be undone
+            </label>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="delete-actions">
+          <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}" 
+             class="btn btn-outline-secondary btn-lg">
+            <i class="fas fa-times me-2"></i>
+            No, Keep It
+          </a>
+          <button type="submit" 
+                  class="btn btn-danger btn-lg" 
+                  id="deleteButton"
+                  disabled>
+            <i class="fas fa-trash me-2"></i>
+            Yes, Delete Permanently
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Safety Tips -->
+  <div class="safety-tips mt-4">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="tip-card">
+          <div class="tip-icon bg-info">
+            <i class="fas fa-lightbulb"></i>
+          </div>
+          <h6>Consider Alternatives</h6>
+          <p class="text-muted small mb-0">
+            Instead of deleting, you might want to deactivate or archive this item
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="tip-card">
+          <div class="tip-icon bg-warning">
+            <i class="fas fa-database"></i>
+          </div>
+          <h6>Backup First</h6>
+          <p class="text-muted small mb-0">
+            Make sure you have a backup before deleting important data
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="tip-card">
+          <div class="tip-icon bg-danger">
+            <i class="fas fa-ban"></i>
+          </div>
+          <h6>No Undo</h6>
+          <p class="text-muted small mb-0">
+            Once deleted, this data cannot be recovered from the system
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Delete View Styles */
+.admin-delete-view {
+  padding: 0;
+}
+
+.delete-warning-header {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #fca5a5;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.warning-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: white;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 2.5rem;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.warning-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #991b1b;
+  margin-bottom: 0.5rem;
+}
+
+.warning-subtitle {
+  color: #7f1d1d;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Confirmation Card */
+.delete-confirmation-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 2px solid #fca5a5;
+  overflow: hidden;
+}
+
+.confirmation-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 1.5rem 2rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.confirmation-header h5 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.confirmation-body {
+  padding: 2rem;
+}
+
+/* Object Details */
+.object-details {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border: 2px solid var(--border-color);
+}
+
+.object-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.object-type {
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.object-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-top: 0.25rem;
+}
+
+/* Related Objects Warning */
+.related-objects-warning {
+  margin-bottom: 1.5rem;
+}
+
+.related-objects-warning .alert {
+  border-radius: 12px;
+  border: 2px solid #fbbf24;
+}
+
+.related-objects-list {
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.related-objects-list ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.related-objects-list li {
+  margin-bottom: 0.5rem;
+  color: var(--fg-secondary);
+}
+
+/* Confirmation Checkbox */
+.confirmation-checkbox {
+  background: #fef3c7;
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.confirmation-checkbox .form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.confirmation-checkbox .form-check-input {
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.confirmation-checkbox .form-check-label {
+  font-weight: 600;
+  color: #92400e;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Delete Actions */
+.delete-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding-top: 1rem;
+}
+
+.delete-actions .btn {
+  padding: 0.875rem 2rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  min-width: 200px;
+}
+
+.delete-actions .btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s ease;
+}
+
+.delete-actions .btn-danger:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.delete-actions .btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Safety Tips */
+.safety-tips .tip-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.safety-tips .tip-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.safety-tips .tip-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.25rem;
+}
+
+.safety-tips .tip-icon.bg-info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.safety-tips .tip-icon.bg-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.safety-tips .tip-icon.bg-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.safety-tips h6 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--fg-primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .delete-warning-header {
+    padding: 1.5rem;
+  }
+  
+  .warning-title {
+    font-size: 1.5rem;
+  }
+  
+  .confirmation-body {
+    padding: 1.5rem;
+  }
+  
+  .object-details {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .delete-actions {
+    flex-direction: column;
+  }
+  
+  .delete-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Dark Mode */
+[data-theme="dark"] .delete-confirmation-card,
+[data-theme="dark"] .object-details,
+[data-theme="dark"] .safety-tips .tip-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .confirmation-header {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .related-objects-list {
+  background: var(--bg-tertiary);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const checkbox = document.getElementById('confirmDelete');
+  const deleteButton = document.getElementById('deleteButton');
+  
+  if (checkbox && deleteButton) {
+    checkbox.addEventListener('change', function() {
+      deleteButton.disabled = !this.checked;
+      
+      if (this.checked) {
+        deleteButton.classList.add('pulse-animation');
+      } else {
+        deleteButton.classList.remove('pulse-animation');
+      }
+    });
+  }
+  
+  // Add confirmation on form submit
+  const form = document.querySelector('.delete-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      if (!confirm('Are you absolutely sure? This action cannot be undone!')) {
+        e.preventDefault();
+        return false;
+      }
+      
+      // Show loading state
+      deleteButton.disabled = true;
+      deleteButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
+    });
+  }
+});
+</script>
+{% endblock %}

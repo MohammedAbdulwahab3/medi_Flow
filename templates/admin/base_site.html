@@ -7,17 +7,306 @@
 {% block extra_css %}
   <link rel="stylesheet" type="text/css" href="{% static 'css/admin_custom.css' %}">
   {{ block.super }}
+  <style>
+    /* Additional inline styles for better integration */
+    body {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    .breadcrumb-admin {
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border-color);
+    }
+    
+    .breadcrumb-admin .breadcrumb {
+      margin: 0;
+      background: transparent;
+      padding: 0;
+    }
+    
+    .breadcrumb-admin .breadcrumb-item {
+      font-weight: 500;
+    }
+    
+    .breadcrumb-admin .breadcrumb-item.active {
+      color: var(--brand-primary);
+    }
+    
+    .breadcrumb-admin .breadcrumb-item + .breadcrumb-item::before {
+      content: "›";
+      color: var(--fg-muted);
+      font-size: 1.25rem;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-  <div class="container py-4">
-    <div class="d-flex align-items-center mb-4">
-      <div class="mf-logo" style="margin-right:12px;">MF</div>
-      <div>
-        <h2 class="mb-0">MediFlow Admin</h2>
-        <small class="text-muted">Manage users, medicines, prescriptions and system settings</small>
+<div class="admin-container">
+  <!-- Admin Header -->
+  <div class="admin-header">
+    <div class="container">
+      <div class="d-flex align-items-center">
+        <div class="admin-logo">
+          <i class="fas fa-cogs"></i>
+        </div>
+        <div>
+          <h1 class="admin-title">MediFlow Admin Panel</h1>
+          <p class="admin-subtitle">Comprehensive system management and control center</p>
+        </div>
       </div>
     </div>
+  </div>
+  
+  <div class="container">
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb-admin">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{% url 'admin:index' %}">
+              <i class="fas fa-home me-1"></i>Admin Home
+            </a>
+          </li>
+          {% block breadcrumbs %}{% endblock %}
+        </ol>
+      </nav>
+    </div>
+    
+    <!-- Admin Navigation Tabs -->
+    <nav class="admin-nav">
+      <div class="container-fluid px-0">
+        <ul class="nav nav-pills">
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" 
+               href="{% url 'admin:index' %}">
+              <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'admin:authentication_app_user_changelist' %}">
+              <i class="fas fa-users me-2"></i>Users
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'admin:medicine_medicine_changelist' %}">
+              <i class="fas fa-pills me-2"></i>Medicines
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'admin:prescription_prescription_changelist' %}">
+              <i class="fas fa-prescription me-2"></i>Prescriptions
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'admin:inventory_inventory_changelist' %}">
+              <i class="fas fa-warehouse me-2"></i>Inventory
+            </a>
+          </li>
+          <li class="nav-item ms-auto">
+            <a class="nav-link" href="{% url 'frontend:home' %}" title="Back to Main Site">
+              <i class="fas fa-arrow-left me-2"></i>Exit Admin
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    
+    <!-- Admin Content -->
     {% block admin_content %}{% endblock %}
   </div>
+</div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div class="modal fade" id="keyboardShortcutsModal" tabindex="-1" aria-labelledby="keyboardShortcutsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="keyboardShortcutsModalLabel">
+          <i class="fas fa-keyboard me-2"></i>Keyboard Shortcuts
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><kbd>?</kbd></span>
+              <span class="text-muted">Show this help</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><kbd>H</kbd></span>
+              <span class="text-muted">Go to Admin Home</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><kbd>U</kbd></span>
+              <span class="text-muted">Go to Users</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><kbd>M</kbd></span>
+              <span class="text-muted">Go to Medicines</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><kbd>P</kbd></span>
+              <span class="text-muted">Go to Prescriptions</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><kbd>I</kbd></span>
+              <span class="text-muted">Go to Inventory</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><kbd>Esc</kbd></span>
+              <span class="text-muted">Exit Admin / Close Modal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin JavaScript Enhancements -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      // Don't trigger if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      
+      switch(e.key.toLowerCase()) {
+        case '?':
+          e.preventDefault();
+          const modal = new bootstrap.Modal(document.getElementById('keyboardShortcutsModal'));
+          modal.show();
+          break;
+        case 'h':
+          e.preventDefault();
+          window.location.href = "{% url 'admin:index' %}";
+          break;
+        case 'u':
+          e.preventDefault();
+          window.location.href = "{% url 'admin:authentication_app_user_changelist' %}";
+          break;
+        case 'm':
+          e.preventDefault();
+          window.location.href = "{% url 'admin:medicine_medicine_changelist' %}";
+          break;
+        case 'p':
+          e.preventDefault();
+          window.location.href = "{% url 'admin:prescription_prescription_changelist' %}";
+          break;
+        case 'i':
+          e.preventDefault();
+          window.location.href = "{% url 'admin:inventory_inventory_changelist' %}";
+          break;
+        case 'escape':
+          // Close any open modals or go back
+          const openModal = document.querySelector('.modal.show');
+          if (openModal) {
+            const modalInstance = bootstrap.Modal.getInstance(openModal);
+            if (modalInstance) {
+              modalInstance.hide();
+            }
+          } else {
+            window.location.href = "{% url 'frontend:home' %}";
+          }
+          break;
+      }
+    });
+    
+    // Add tooltips to all elements with title attribute
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+    
+    // Add loading state to buttons
+    document.querySelectorAll('form').forEach(form => {
+      form.addEventListener('submit', function() {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
+        }
+      });
+    });
+    
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+      const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+      alerts.forEach(alert => {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      });
+    }, 5000);
+    
+    // Add confirmation to delete actions
+    document.querySelectorAll('a[href*="delete"], button[name*="delete"]').forEach(element => {
+      element.addEventListener('click', function(e) {
+        if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+          e.preventDefault();
+          return false;
+        }
+      });
+    });
+    
+    // Show keyboard shortcut hint on first visit
+    if (!localStorage.getItem('admin_shortcuts_shown')) {
+      setTimeout(function() {
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed bottom-0 end-0 p-3';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+          <div class="toast show" role="alert">
+            <div class="toast-header">
+              <i class="fas fa-keyboard me-2 text-primary"></i>
+              <strong class="me-auto">Pro Tip</strong>
+              <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+              Press <kbd>?</kbd> to view keyboard shortcuts
+            </div>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        localStorage.setItem('admin_shortcuts_shown', 'true');
+        
+        setTimeout(function() {
+          toast.remove();
+        }, 5000);
+      }, 2000);
+    }
+  });
+</script>
 {% endblock %}

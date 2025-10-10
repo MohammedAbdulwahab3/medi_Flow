@@ -2,30 +2,1039 @@
 {% load i18n admin_list static %}
 
 {% block admin_content %}
-  <div class="row g-4">
-    {% for app in app_list %}
-      <div class="col-md-4">
-        <div class="card p-3 h-100">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <h5 class="mb-1">{{ app.name }}</h5>
-              <small class="text-muted">{{ app.app_url }}</small>
+<div class="dashboard-container">
+  <!-- Hero Welcome Section -->
+  <div class="dashboard-hero">
+    <div class="hero-background"></div>
+    <div class="hero-content">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <div class="welcome-badge">
+            <i class="fas fa-crown me-2"></i>Admin Dashboard
+          </div>
+          <h1 class="hero-title">
+            <span class="wave-emoji">👋</span>
+            Welcome back, <span class="highlight">{{ user.get_full_name|default:user.username }}</span>!
+          </h1>
+          <p class="hero-subtitle">
+            <i class="fas fa-shield-alt me-2"></i>
+            You're logged in as <strong>{{ user.get_role_display }}</strong> with full admin privileges
+          </p>
+          <div class="hero-stats">
+            <div class="stat-item">
+              <i class="fas fa-clock"></i>
+              <span>Last login: {{ user.last_login|date:"M d, Y - H:i" }}</span>
             </div>
-            <div>
-              <a href="{{ app.app_url }}" class="btn btn-sm btn-outline-primary">Open</a>
+            <div class="stat-item">
+              <i class="fas fa-calendar"></i>
+              <span>Today: {% now "l, F j, Y" %}</span>
             </div>
           </div>
-          <div class="mt-3">
-            <ul class="list-unstyled mb-0">
-              {% for model in app.models %}
-                <li>
-                  <a href="{{ model.admin_url }}">{{ model.name }}</a>
-                </li>
-              {% endfor %}
-            </ul>
+        </div>
+        <div class="col-lg-4 text-end d-none d-lg-block">
+          <div class="hero-illustration">
+            <div class="illustration-circle circle-1"></div>
+            <div class="illustration-circle circle-2"></div>
+            <div class="illustration-circle circle-3"></div>
+            <div class="illustration-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
           </div>
         </div>
       </div>
-    {% endfor %}
+    </div>
   </div>
+
+  <!-- Quick Actions Section -->
+  <div class="quick-actions-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-bolt me-2"></i>Quick Actions
+      </h3>
+      <p class="section-subtitle">Jump to your most common tasks</p>
+    </div>
+    
+    <div class="row g-4">
+      <div class="col-lg-3 col-md-6">
+        <a href="{% url 'admin:authentication_app_user_add' %}" class="action-card action-primary">
+          <div class="action-card-inner">
+            <div class="action-icon-wrapper">
+              <div class="action-icon">
+                <i class="fas fa-user-plus"></i>
+              </div>
+              <div class="action-glow"></div>
+            </div>
+            <div class="action-content">
+              <h4 class="action-title">Add User</h4>
+              <p class="action-description">Create new user account</p>
+              <div class="action-footer">
+                <span class="action-link">Get started <i class="fas fa-arrow-right ms-2"></i></span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <a href="{% url 'admin:medicine_medicine_add' %}" class="action-card action-success">
+          <div class="action-card-inner">
+            <div class="action-icon-wrapper">
+              <div class="action-icon">
+                <i class="fas fa-pills"></i>
+              </div>
+              <div class="action-glow"></div>
+            </div>
+            <div class="action-content">
+              <h4 class="action-title">Add Medicine</h4>
+              <p class="action-description">Register new medicine</p>
+              <div class="action-footer">
+                <span class="action-link">Get started <i class="fas fa-arrow-right ms-2"></i></span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <a href="{% url 'admin:prescription_prescription_changelist' %}" class="action-card action-info">
+          <div class="action-card-inner">
+            <div class="action-icon-wrapper">
+              <div class="action-icon">
+                <i class="fas fa-prescription"></i>
+              </div>
+              <div class="action-glow"></div>
+            </div>
+            <div class="action-content">
+              <h4 class="action-title">Prescriptions</h4>
+              <p class="action-description">View all prescriptions</p>
+              <div class="action-footer">
+                <span class="action-link">View all <i class="fas fa-arrow-right ms-2"></i></span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <a href="{% url 'admin:inventory_inventory_changelist' %}" class="action-card action-warning">
+          <div class="action-card-inner">
+            <div class="action-icon-wrapper">
+              <div class="action-icon">
+                <i class="fas fa-warehouse"></i>
+              </div>
+              <div class="action-glow"></div>
+            </div>
+            <div class="action-content">
+              <h4 class="action-title">Inventory</h4>
+              <p class="action-description">Manage stock levels</p>
+              <div class="action-footer">
+                <span class="action-link">Manage <i class="fas fa-arrow-right ms-2"></i></span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Overview Section -->
+  <div class="system-overview-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-tachometer-alt me-2"></i>System Overview
+      </h3>
+      <p class="section-subtitle">Quick glance at your system status</p>
+    </div>
+
+    <div class="row g-4">
+      {% for app in app_list %}
+      <div class="col-lg-4 col-md-6">
+        <div class="app-overview-card">
+          <div class="app-card-header">
+            <div class="app-icon-large">
+              {% if 'Authentication' in app.name %}
+                <i class="fas fa-users"></i>
+              {% elif 'Medicine' in app.name %}
+                <i class="fas fa-pills"></i>
+              {% elif 'Prescription' in app.name %}
+                <i class="fas fa-prescription"></i>
+              {% elif 'Inventory' in app.name %}
+                <i class="fas fa-warehouse"></i>
+              {% elif 'Api' in app.name %}
+                <i class="fas fa-code"></i>
+              {% else %}
+                <i class="fas fa-folder"></i>
+              {% endif %}
+            </div>
+            <div class="app-header-content">
+              <h4 class="app-name">{{ app.name }}</h4>
+              <p class="app-model-count">
+                <i class="fas fa-layer-group me-1"></i>
+                {{ app.models|length }} model{{ app.models|length|pluralize }}
+              </p>
+            </div>
+            <a href="{{ app.app_url }}" class="app-expand-btn" title="View all">
+              <i class="fas fa-external-link-alt"></i>
+            </a>
+          </div>
+
+          <div class="app-card-body">
+            <div class="models-grid">
+              {% for model in app.models %}
+              <div class="model-row">
+                <a href="{{ model.admin_url }}" class="model-link-item">
+                  <div class="model-icon-small">
+                    <i class="fas fa-table"></i>
+                  </div>
+                  <span class="model-name-text">{{ model.name }}</span>
+                  <div class="model-actions-inline">
+                    {% if model.add_url %}
+                    <a href="{{ model.add_url }}" 
+                       class="model-add-btn" 
+                       title="Add {{ model.name }}"
+                       onclick="event.stopPropagation();">
+                      <i class="fas fa-plus"></i>
+                    </a>
+                    {% endif %}
+                    <i class="fas fa-chevron-right model-arrow"></i>
+                  </div>
+                </a>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="app-card-footer">
+            <a href="{{ app.app_url }}" class="view-all-link">
+              View all {{ app.name|lower }} <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="empty-state-card">
+          <div class="empty-icon">
+            <i class="fas fa-inbox"></i>
+          </div>
+          <h4>No Apps Available</h4>
+          <p class="text-muted">Please check your admin configuration</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Help & Resources Section -->
+  <div class="help-resources-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="fas fa-life-ring me-2"></i>Help & Resources
+      </h3>
+      <p class="section-subtitle">Get the most out of your admin panel</p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-4 col-md-6">
+        <div class="resource-card">
+          <div class="resource-icon-wrapper">
+            <div class="resource-icon bg-gradient-primary">
+              <i class="fas fa-book-open"></i>
+            </div>
+          </div>
+          <h5 class="resource-title">Documentation</h5>
+          <p class="resource-description">
+            Comprehensive guides and tutorials to help you master the admin panel
+          </p>
+          <a href="#" class="resource-link">
+            Read docs <i class="fas fa-arrow-right ms-2"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-lg-4 col-md-6">
+        <div class="resource-card">
+          <div class="resource-icon-wrapper">
+            <div class="resource-icon bg-gradient-success">
+              <i class="fas fa-headset"></i>
+            </div>
+          </div>
+          <h5 class="resource-title">Support Center</h5>
+          <p class="resource-description">
+            Get help from our support team whenever you need assistance
+          </p>
+          <a href="#" class="resource-link">
+            Contact support <i class="fas fa-arrow-right ms-2"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-lg-4 col-md-6">
+        <div class="resource-card">
+          <div class="resource-icon-wrapper">
+            <div class="resource-icon bg-gradient-info">
+              <i class="fas fa-keyboard"></i>
+            </div>
+          </div>
+          <h5 class="resource-title">Keyboard Shortcuts</h5>
+          <p class="resource-description">
+            Work faster with keyboard shortcuts. Press <kbd>?</kbd> to view all
+          </p>
+          <a href="#" class="resource-link" onclick="event.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', {key: '?'}));">
+            View shortcuts <i class="fas fa-arrow-right ms-2"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Dashboard Container */
+.dashboard-container {
+  padding: 0;
+}
+
+/* Hero Section */
+.dashboard-hero {
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 3rem 2.5rem;
+  margin-bottom: 2.5rem;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+}
+
+.hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>') repeat;
+  opacity: 0.3;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.wave-emoji {
+  display: inline-block;
+  animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+}
+
+.hero-title .highlight {
+  background: linear-gradient(120deg, #fbbf24 0%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 1.5rem;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+}
+
+.stat-item i {
+  font-size: 1.125rem;
+}
+
+/* Hero Illustration */
+.hero-illustration {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+.illustration-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.circle-1 {
+  width: 200px;
+  height: 200px;
+  top: 0;
+  left: 0;
+  animation: float 6s ease-in-out infinite;
+}
+
+.circle-2 {
+  width: 150px;
+  height: 150px;
+  top: 25px;
+  left: 25px;
+  animation: float 4s ease-in-out infinite reverse;
+}
+
+.circle-3 {
+  width: 100px;
+  height: 100px;
+  top: 50px;
+  left: 50px;
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.illustration-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  color: white;
+  z-index: 1;
+}
+
+/* Section Headers */
+.section-header {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+  font-size: 1rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+/* Quick Actions Section */
+.quick-actions-section {
+  margin-bottom: 3rem;
+}
+
+.action-card {
+  display: block;
+  text-decoration: none;
+  height: 100%;
+  perspective: 1000px;
+}
+
+.action-card-inner {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  height: 100%;
+  border: 2px solid transparent;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.action-card:hover .action-card-inner {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.action-card.action-primary:hover .action-card-inner {
+  border-color: #667eea;
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+}
+
+.action-card.action-success:hover .action-card-inner {
+  border-color: #10b981;
+  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+}
+
+.action-card.action-info:hover .action-card-inner {
+  border-color: #3b82f6;
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+}
+
+.action-card.action-warning:hover .action-card-inner {
+  border-color: #f59e0b;
+  box-shadow: 0 20px 40px rgba(245, 158, 11, 0.3);
+}
+
+.action-icon-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.action-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: white;
+  position: relative;
+  z-index: 1;
+  transition: all 0.4s ease;
+}
+
+.action-card.action-primary .action-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.action-card.action-success .action-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.action-card.action-info .action-icon {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.action-card.action-warning .action-icon {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.action-card:hover .action-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.action-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px;
+  height: 70px;
+  border-radius: 16px;
+  opacity: 0;
+  transition: all 0.4s ease;
+  filter: blur(20px);
+}
+
+.action-card.action-primary:hover .action-glow {
+  background: #667eea;
+  opacity: 0.6;
+  width: 100px;
+  height: 100px;
+}
+
+.action-card.action-success:hover .action-glow {
+  background: #10b981;
+  opacity: 0.6;
+  width: 100px;
+  height: 100px;
+}
+
+.action-card.action-info:hover .action-glow {
+  background: #3b82f6;
+  opacity: 0.6;
+  width: 100px;
+  height: 100px;
+}
+
+.action-card.action-warning:hover .action-glow {
+  background: #f59e0b;
+  opacity: 0.6;
+  width: 100px;
+  height: 100px;
+}
+
+.action-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin-bottom: 0.5rem;
+}
+
+.action-description {
+  font-size: 0.95rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+.action-footer {
+  padding-top: 1rem;
+  border-top: 2px solid #f3f4f6;
+}
+
+.action-link {
+  font-weight: 600;
+  color: var(--fg-secondary);
+  transition: all 0.3s ease;
+}
+
+.action-card:hover .action-link {
+  color: var(--brand-primary);
+}
+
+.action-card:hover .action-link i {
+  transform: translateX(4px);
+}
+
+.action-link i {
+  transition: transform 0.3s ease;
+}
+
+/* System Overview Section */
+.system-overview-section {
+  margin-bottom: 3rem;
+}
+
+.app-overview-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid #f3f4f6;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-overview-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15);
+  transform: translateY(-4px);
+}
+
+.app-card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.app-icon-large {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.app-header-content {
+  flex: 1;
+}
+
+.app-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.app-model-count {
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+.app-expand-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-secondary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.app-expand-btn:hover {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+  transform: scale(1.1);
+}
+
+.app-card-body {
+  padding: 1rem;
+  flex: 1;
+}
+
+.models-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.model-row {
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.model-row:hover {
+  background: #f8f9fa;
+}
+
+.model-link-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  text-decoration: none;
+  color: var(--fg-primary);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.model-icon-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.model-name-text {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.model-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.model-row:hover .model-actions-inline {
+  opacity: 1;
+}
+
+.model-add-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #667eea;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.model-add-btn:hover {
+  background: #764ba2;
+  transform: scale(1.1);
+}
+
+.model-arrow {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.model-row:hover .model-arrow {
+  color: #667eea;
+  transform: translateX(4px);
+}
+
+.app-card-footer {
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  border-top: 2px solid #e5e7eb;
+}
+
+.view-all-link {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  color: #667eea;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.view-all-link:hover {
+  color: #764ba2;
+  transform: translateX(4px);
+}
+
+.view-all-link i {
+  transition: transform 0.3s ease;
+}
+
+.view-all-link:hover i {
+  transform: translateX(4px);
+}
+
+/* Help & Resources Section */
+.help-resources-section {
+  margin-bottom: 2rem;
+}
+
+.resource-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  border: 2px solid #f3f4f6;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.resource-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15);
+  transform: translateY(-4px);
+}
+
+.resource-icon-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.resource-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.bg-gradient-info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.resource-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin-bottom: 0.75rem;
+}
+
+.resource-description {
+  font-size: 0.95rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.resource-link {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  color: #667eea;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.resource-link:hover {
+  color: #764ba2;
+  transform: translateX(4px);
+}
+
+.resource-link i {
+  transition: transform 0.3s ease;
+}
+
+.resource-link:hover i {
+  transform: translateX(4px);
+}
+
+.resource-link kbd {
+  background: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Empty State */
+.empty-state-card {
+  background: white;
+  border-radius: 16px;
+  padding: 4rem 2rem;
+  text-align: center;
+  border: 2px dashed #e5e7eb;
+}
+
+.empty-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 3rem;
+  color: #667eea;
+}
+
+.empty-state-card h4 {
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .dashboard-hero {
+    padding: 2rem 1.5rem;
+  }
+  
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-stats {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-hero {
+    padding: 1.5rem;
+  }
+  
+  .hero-title {
+    font-size: 1.75rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .action-card-inner {
+    padding: 1.5rem;
+  }
+  
+  .action-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.75rem;
+  }
+}
+
+/* Dark Mode */
+[data-theme="dark"] .dashboard-hero {
+  background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
+}
+
+[data-theme="dark"] .action-card-inner,
+[data-theme="dark"] .app-overview-card,
+[data-theme="dark"] .resource-card,
+[data-theme="dark"] .empty-state-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .app-card-header {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .app-card-footer {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .model-row:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.action-card,
+.app-overview-card,
+.resource-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.action-card:nth-child(1) { animation-delay: 0.1s; }
+.action-card:nth-child(2) { animation-delay: 0.2s; }
+.action-card:nth-child(3) { animation-delay: 0.3s; }
+.action-card:nth-child(4) { animation-delay: 0.4s; }
+</style>
 {% endblock %}

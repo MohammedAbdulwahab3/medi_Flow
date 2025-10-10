@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Count, Q, Min, Max
 from django.db import transaction
 from django import forms
 from datetime import date, timedelta
@@ -107,7 +107,7 @@ def doctor_dashboard(request):
 @login_required
 def pharmacist_dashboard(request):
     from datetime import date, timedelta
-    from django.db.models import Sum, Count, Q
+    # imported at module level: Sum, Count, Q
     
     user = request.user
     if not user.is_pharmacist:
@@ -448,7 +448,36 @@ def medicine_detail_page(request, medicine_id):
         is_active=True,
         quantity__gt=0
     ).order_by('-manufacturing_date')[:5]
-    
+
+    # Build a small pharmacy list for inline map/navigation
+    # Sum imported at module level
+    inv_qs = PharmacyInventory.objects.filter(batch__medicine=medicine, current_stock__gt=0).select_related('pharmacist', 'pharmacist__pharmacist_profile', 'batch')
+    pharm_map = {}
+    for inv in inv_qs:
+        pid = inv.pharmacist.id
+        profile = getattr(inv.pharmacist, 'pharmacist_profile', None)
+        entry = pharm_map.setdefault(pid, {
+            'pharmacist': inv.pharmacist,
+            'profile': profile,
+            'total_stock': 0,
+            'prices': [],
+            'batches': [],
+        })
+        entry['total_stock'] += inv.current_stock or 0
+        price = inv.get_price() if hasattr(inv, 'get_price') else (inv.batch.selling_price if inv.batch else None)
+        if price:
+            entry['prices'].append(float(price))
+        entry['batches'].append({'batch': inv.batch, 'stock': inv.current_stock, 'price': price})
+
+    pharmacy_list = []
+    for v in pharm_map.values():
+        v['min_price'] = min(v['prices']) if v['prices'] else None
+        v['max_price'] = max(v['prices']) if v['prices'] else None
+        pharmacy_list.append(v)
+
+    # Sort by min_price for display
+    pharmacy_list.sort(key=lambda x: (x['min_price'] is None, x['min_price'] if x['min_price'] is not None else float('inf')))
+
     return render(request, 'frontend/patient/medicine_detail.html', {
         'medicine': medicine,
         'min_price': price_range.get('min_price'),
@@ -457,6 +486,7 @@ def medicine_detail_page(request, medicine_id):
         'pharmacy_count': pharmacy_count,
         'batches': batches,
         'recent_batches': recent_batches,
+        'pharmacy_list': pharmacy_list,
     })
 
 
@@ -464,7 +494,7 @@ def medicine_detail_page(request, medicine_id):
 def medicine_trace(request, medicine_id):
     medicine = get_object_or_404(Medicine, id=medicine_id, is_active=True)
     # All batches for the medicine, with manufacturer and whether any pharmacy has stock
-    from django.db.models import Sum
+    # Sum imported at module level
     batches = (MedicineBatch.objects
                .filter(medicine=medicine)
                .select_related('medicine')
@@ -480,6 +510,44 @@ def medicine_trace(request, medicine_id):
             'batch': b,
             'total_stock': totals.get(b.id, 0) or 0,
         })
+    # JSON for mobile
+    if request.META.get('HTTP_ACCEPT', '').find('application/json') >= 0:
+        from django.http import JsonResponse
+        data = {
+            'medicine': {
+                'id': medicine.id,
+                'name': medicine.name,
+                'generic_name': medicine.generic_name,
+            },
+            'timeline': [
+                # Provide a simple synthesized timeline from batches
+                {
+                    'type': 'manufacturing',
+                    'timestamp': (b.manufacturing_date.isoformat() if hasattr(b, 'manufacturing_date') else ''),
+                    'description': f"Batch {b.batch_number} manufactured",
+                    'location': '',
+                } for b in batches
+            ],
+            'manufacturer': {
+                'name': (medicine.manufacturer.get_full_name() or medicine.manufacturer.username) if medicine.manufacturer_id else '',
+                'license_number': getattr(medicine.manufacturer, 'license_number', '') if medicine.manufacturer_id else '',
+                'address': getattr(medicine.manufacturer, 'address', '') if medicine.manufacturer_id else '',
+            },
+            'distribution': {
+                'distributor': '',
+                'warehouse': '',
+                'shipping_date': '',
+            },
+            'batch_rows': [
+                {
+                    'batch_number': row['batch'].batch_number,
+                    'manufacturing_date': getattr(row['batch'], 'manufacturing_date', None).isoformat() if getattr(row['batch'], 'manufacturing_date', None) else None,
+                    'expiry_date': getattr(row['batch'], 'expiry_date', None).isoformat() if getattr(row['batch'], 'expiry_date', None) else None,
+                    'total_stock': row['total_stock'],
+                } for row in batch_rows
+            ]
+        }
+        return JsonResponse(data)
     return render(request, 'frontend/patient/medicine_trace.html', {
         'medicine': medicine,
         'batch_rows': batch_rows,
@@ -1243,9 +1311,30 @@ def transfer_medicine(request):
 def user_profile(request):
     """Modern user profile management with beautiful UI"""
     user = request.user
-    
+    # JSON PUT support for mobile
+    if request.method in ['POST', 'PUT'] and request.META.get('CONTENT_TYPE', '').startswith('application/json'):
+        import json as _json
+        try:
+            data = _json.loads(request.body or '{}')
+        except Exception:
+            data = {}
+        user.full_name = data.get('full_name', user.full_name)
+        user.email = data.get('email', user.email)
+        user.phone = data.get('phone', user.phone)
+        user.address = data.get('address', user.address)
+        user.date_of_birth = data.get('date_of_birth') or user.date_of_birth
+        user.gender = data.get('gender', user.gender)
+        user.emergency_contact = data.get('emergency_contact', user.emergency_contact)
+        if user.is_doctor or user.is_pharmacist:
+            user.license_number = data.get('license_number', user.license_number)
+        elif user.is_manufacturer:
+            user.national_id = data.get('national_id', user.national_id)
+        user.save()
+        from django.http import JsonResponse
+        return JsonResponse({'ok': True})
+
     if request.method == 'POST':
-        # Handle profile updates
+        # Handle profile updates (form)
         user.full_name = request.POST.get('full_name', '')
         user.email = request.POST.get('email', '')
         user.phone = request.POST.get('phone', '')
@@ -1253,15 +1342,10 @@ def user_profile(request):
         user.date_of_birth = request.POST.get('date_of_birth') or None
         user.gender = request.POST.get('gender', '')
         user.emergency_contact = request.POST.get('emergency_contact', '')
-        
-        # Handle role-specific fields
-        if user.is_doctor:
-            user.license_number = request.POST.get('license_number', '')
-        elif user.is_pharmacist:
+        if user.is_doctor or user.is_pharmacist:
             user.license_number = request.POST.get('license_number', '')
         elif user.is_manufacturer:
             user.national_id = request.POST.get('national_id', '')
-        
         user.save()
         messages.success(request, 'Profile updated successfully!')
         return redirect('frontend:user_profile')
@@ -1298,6 +1382,26 @@ def user_profile(request):
             'inventory_items': Inventory.objects.filter(batch__medicine__manufacturer=user).count(),
         }
     
+    # JSON GET for mobile profile
+    if request.META.get('HTTP_ACCEPT', '').find('application/json') >= 0:
+        from django.http import JsonResponse
+        return JsonResponse({
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.full_name,
+                'email': user.email,
+                'phone': user.phone,
+                'address': user.address,
+                'gender': user.gender,
+                'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
+                'role': user.role,
+                'license_number': user.license_number,
+                'national_id': user.national_id,
+                'emergency_contact': user.emergency_contact,
+            },
+            'stats': stats,
+        })
     context = {
         'user': user,
         'stats': stats,
@@ -1308,10 +1412,32 @@ def user_profile(request):
 @login_required
 def change_password(request):
     """Modern password change with security features"""
+    if request.method == 'POST' and request.META.get('CONTENT_TYPE', '').startswith('application/json'):
+        # JSON API
+        from django.contrib.auth import update_session_auth_hash
+        import json as _json
+        try:
+            data = _json.loads(request.body or '{}')
+        except Exception:
+            data = {}
+        old = data.get('old_password')
+        new1 = data.get('new_password1') or data.get('new_password')
+        new2 = data.get('new_password2') or new1
+        if not (old and new1 and new2):
+            from django.http import JsonResponse
+            return JsonResponse({'ok': False, 'error': 'Missing fields'}, status=400)
+        from django.contrib.auth.forms import PasswordChangeForm
+        form = PasswordChangeForm(request.user, {'old_password': old, 'new_password1': new1, 'new_password2': new2})
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            from django.http import JsonResponse
+            return JsonResponse({'ok': True})
+        from django.http import JsonResponse
+        return JsonResponse({'ok': False, 'errors': form.errors}, status=400)
     if request.method == 'POST':
         from django.contrib.auth import update_session_auth_hash
         from django.contrib.auth.forms import PasswordChangeForm
-        
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
@@ -1516,9 +1642,29 @@ def appointment_scheduler(request):
 def emergency_contacts(request):
     """Emergency contact management system"""
     user = request.user
+    # JSON GET/PUT for mobile
+    if request.META.get('HTTP_ACCEPT', '').find('application/json') >= 0 and request.method == 'GET':
+        from django.http import JsonResponse
+        return JsonResponse({
+            'primary_contact': user.emergency_contact,
+            'phone': user.phone,
+            'address': user.address,
+        })
+    if request.method in ['POST', 'PUT'] and request.META.get('CONTENT_TYPE', '').startswith('application/json'):
+        import json as _json
+        try:
+            data = _json.loads(request.body or '{}')
+        except Exception:
+            data = {}
+        user.emergency_contact = data.get('primary_contact', data.get('emergency_contact', user.emergency_contact))
+        user.phone = data.get('phone', user.phone)
+        user.address = data.get('address', user.address)
+        user.save()
+        from django.http import JsonResponse
+        return JsonResponse({'ok': True})
     
     if request.method == 'POST':
-        # Handle emergency contact updates
+        # Handle emergency contact updates (form)
         user.emergency_contact = request.POST.get('emergency_contact', '')
         user.save()
         messages.success(request, 'Emergency contact updated successfully!')

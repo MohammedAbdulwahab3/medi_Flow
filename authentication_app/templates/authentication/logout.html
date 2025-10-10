@@ -1,4 +1,257 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Signed Out - MediFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+  .logout-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--neutral-50) 0%, var(--brand-50) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+  
+  .logout-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    max-width: 450px;
+    width: 100%;
+    margin: 0 1rem;
+    text-align: center;
+  }
+  
+  .logout-header {
+    background: linear-gradient(135deg, var(--success-500) 0%, var(--success-700) 100%);
+    color: var(--fg-light);
+    padding: 3rem 2rem 2rem;
+    position: relative;
+  }
+  
+  .logout-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+    opacity: 0.3;
+  }
+  
+  .logout-icon {
+    position: relative;
+    z-index: 1;
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    animation: pulse 2s infinite;
+  }
+  
+  .logout-icon i {
+    font-size: 2.5rem;
+    color: var(--fg-light);
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .logout-title {
+    position: relative;
+    z-index: 1;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  
+  .logout-subtitle {
+    position: relative;
+    z-index: 1;
+    opacity: 0.9;
+    font-size: 1rem;
+    margin: 0;
+  }
+  
+  .logout-body {
+    padding: 2.5rem 2rem;
+  }
+  
+  .logout-message {
+    font-size: 1.1rem;
+    color: var(--fg-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  
+  .btn-logout {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-700) 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--fg-light);
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-right: 1rem;
+  }
+  
+  .btn-logout::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn-logout:hover::before {
+    left: 100%;
+  }
+  
+  .btn-logout:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+    color: var(--fg-light);
+    text-decoration: none;
+  }
+  
+  .btn-secondary {
+    background: var(--neutral-100);
+    border: 2px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--fg-secondary);
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-secondary:hover {
+    background: var(--neutral-200);
+    border-color: var(--neutral-400);
+    color: var(--fg-primary);
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+  
+  .logout-footer {
+    padding: 1.5rem 2rem 2rem;
+    background: var(--neutral-50);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .logout-footer p {
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 0.9rem;
+  }
+  
+  .logout-footer a {
+    color: var(--brand-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  
+  .logout-footer a:hover {
+    color: var(--brand-700);
+    text-decoration: underline;
+  }
+  
+  @media (max-width: 576px) {
+    .logout-container {
+      padding: 1rem 0;
+    }
+    
+    .logout-card {
+      margin: 0 0.5rem;
+    }
+    
+    .logout-header {
+      padding: 2rem 1.5rem 1.5rem;
+    }
+    
+    .logout-body {
+      padding: 2rem 1.5rem;
+    }
+    
+    .logout-footer {
+      padding: 1rem 1.5rem 1.5rem;
+    }
+    
+    .btn-logout {
+      margin-right: 0;
+      margin-bottom: 1rem;
+      display: block;
+      width: 100%;
+    }
+    
+    .btn-secondary {
+      display: block;
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-  <p>You have been logged out. <a href="{% url 'authentication:login' %}">Sign in again</a></p>
+<div class="logout-container">
+  <div class="logout-card">
+    <div class="logout-header">
+      <div class="logout-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h1 class="logout-title">Successfully Signed Out</h1>
+      <p class="logout-subtitle">You have been logged out of MediFlow</p>
+    </div>
+    
+    <div class="logout-body">
+      <div class="logout-message">
+        <p>Thank you for using MediFlow. Your session has been securely ended.</p>
+        <p>We hope to see you again soon!</p>
+      </div>
+      
+      <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+        <a href="{% url 'authentication:login' %}" class="btn btn-logout">
+          <i class="fas fa-sign-in-alt me-2"></i>Sign In Again
+        </a>
+        <a href="{% url 'frontend:home' %}" class="btn btn-secondary">
+          <i class="fas fa-home me-2"></i>Go to Home
+        </a>
+      </div>
+    </div>
+    
+    <div class="logout-footer">
+      <p>
+        Need help? 
+        <a href="{% url 'frontend:contact' %}">Contact Support</a> or 
+        <a href="{% url 'frontend:help' %}">Visit Help Center</a>
+      </p>
+    </div>
+  </div>
+</div>
 {% endblock %}

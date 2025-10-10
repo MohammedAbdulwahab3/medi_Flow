@@ -3,15 +3,275 @@
 
 {% block title %}Admin Sign In - MediFlow{% endblock %}
 
+{% block extra_css %}
+<style>
+  .admin-login-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--brand-50) 0%, var(--neutral-50) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+  
+  .admin-login-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    max-width: 450px;
+    width: 100%;
+    margin: 0 1rem;
+  }
+  
+  .admin-login-header {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-700) 100%);
+    color: var(--fg-light);
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    position: relative;
+  }
+  
+  .admin-login-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+    opacity: 0.3;
+  }
+  
+  .admin-login-logo {
+    position: relative;
+    z-index: 1;
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .admin-login-logo i {
+    font-size: 2.5rem;
+    color: var(--fg-light);
+  }
+  
+  .admin-login-title {
+    position: relative;
+    z-index: 1;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  
+  .admin-login-subtitle {
+    position: relative;
+    z-index: 1;
+    opacity: 0.9;
+    font-size: 1rem;
+    margin: 0;
+  }
+  
+  .admin-login-body {
+    padding: 2.5rem 2rem;
+  }
+  
+  .form-floating {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-floating .form-control {
+    height: 3.5rem;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--neutral-200);
+    background: var(--bg-card);
+    transition: all 0.3s ease;
+  }
+  
+  .form-floating .form-control:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.1);
+    background: var(--bg-card);
+  }
+  
+  .form-floating label {
+    color: var(--fg-muted);
+    font-weight: 500;
+  }
+  
+  .btn-admin-login {
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-700) 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--fg-light);
+    width: 100%;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-admin-login::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn-admin-login:hover::before {
+    left: 100%;
+  }
+  
+  .btn-admin-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+  }
+  
+  .admin-login-footer {
+    padding: 1.5rem 2rem 2rem;
+    text-align: center;
+    background: var(--neutral-50);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .admin-login-link {
+    color: var(--brand-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  
+  .admin-login-link:hover {
+    color: var(--brand-700);
+    text-decoration: underline;
+  }
+  
+  .error-message {
+    background: var(--danger-50);
+    border: 1px solid var(--danger-200);
+    color: var(--danger-700);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .form-error {
+    color: var(--danger-500);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+  
+  @media (max-width: 576px) {
+    .admin-login-container {
+      padding: 1rem 0;
+    }
+    
+    .admin-login-card {
+      margin: 0 0.5rem;
+    }
+    
+    .admin-login-header {
+      padding: 2rem 1.5rem 1.5rem;
+    }
+    
+    .admin-login-body {
+      padding: 2rem 1.5rem;
+    }
+    
+    .admin-login-footer {
+      padding: 1rem 1.5rem 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-  <div class="admin-login-container">
-    <div class="admin-login-card">
-      <div class="admin-login-header">
-        <div class="mf-logo-large">MF</div>
-        <h1>MediFlow Admin</h1>
-        <p class="lead">Sign in to manage the MediFlow system</p>
+<div class="admin-login-container">
+  <div class="admin-login-card">
+    <div class="admin-login-header">
+      <div class="admin-login-logo">
+        <i class="fas fa-shield-alt"></i>
       </div>
-      {{ block.super }}
+      <h1 class="admin-login-title">Admin Access</h1>
+      <p class="admin-login-subtitle">Sign in to manage the MediFlow system</p>
+    </div>
+    
+    <div class="admin-login-body">
+      {% if form.errors %}
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Please enter a correct username and password. Note that both fields may be case-sensitive.
+        </div>
+      {% endif %}
+      
+      <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="form-floating">
+          <input type="text" 
+                 class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                 id="id_username" 
+                 name="username" 
+                 placeholder="Username"
+                 value="{{ form.username.value|default:'' }}"
+                 required
+                 autofocus>
+          <label for="id_username">
+            <i class="fas fa-user me-2"></i>Username
+          </label>
+          {% if form.username.errors %}
+            <div class="form-error">
+              {{ form.username.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+        
+        <div class="form-floating">
+          <input type="password" 
+                 class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
+                 id="id_password" 
+                 name="password" 
+                 placeholder="Password"
+                 required>
+          <label for="id_password">
+            <i class="fas fa-lock me-2"></i>Password
+          </label>
+          {% if form.password.errors %}
+            <div class="form-error">
+              {{ form.password.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-admin-login">
+          <i class="fas fa-sign-in-alt me-2"></i>Sign In to Admin
+        </button>
+      </form>
+    </div>
+    
+    <div class="admin-login-footer">
+      <p class="mb-0">
+        <a href="{% url 'frontend:home' %}" class="admin-login-link">
+          <i class="fas fa-arrow-left me-2"></i>Back to Main Site
+        </a>
+      </p>
     </div>
   </div>
+</div>
 {% endblock %}

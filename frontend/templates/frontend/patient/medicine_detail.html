@@ -214,9 +214,84 @@
                 </div>
             </div>
             {% endif %}
+            
+            <!-- Nearby Pharmacies (mini map + list) -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Nearby Pharmacies</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div id="mini-map" style="height:300px;width:100%;border-radius:6px;"></div>
+                        </div>
+                        <div class="col-md-6">
+                            {% if pharmacy_list %}
+                                <ul class="list-group">
+                                {% for p in pharmacy_list|slice:":6" %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="fw-semibold">{{ p.profile.pharmacy_name|default:p.pharmacist.username }}</div>
+                                            <div class="small text-muted">{{ p.profile.address|default:'Address not available' }}</div>
+                                            <div class="small text-muted">Stock: <strong>{{ p.total_stock }}</strong></div>
+                                        </div>
+                                        <div class="ms-3 text-end">
+                                            {% if p.profile.latitude and p.profile.longitude %}
+                                                <a class="btn btn-sm btn-outline-primary" href="#" role="button" onclick="openDirections({{ p.profile.latitude }}, {{ p.profile.longitude }})">
+                                                    <i class="fas fa-directions"></i> Directions
+                                                </a>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No location</span>
+                                            {% endif %}
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No nearby pharmacies available for this medicine.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </main>
+
+<!-- Leaflet CSS & JS for mini-map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script id="detail-pharmacies-data" type="application/json">{{ pharmacy_list|default:'[]'|safe|json_script:'pharmacies' }}</script>
+
+<script>
+function openDirections(lat, lng){
+    const dest = `${lat},${lng}`;
+    // Open Google Maps directions in a new tab (origin left to user)
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
+    window.open(url, '_blank');
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    try{
+        const pharmacies = JSON.parse(document.getElementById('detail-pharmacies-data').textContent || '[]');
+        const coords = pharmacies.map(p => ({lat: p.profile && p.profile.latitude ? parseFloat(p.profile.latitude) : null, lng: p.profile && p.profile.longitude ? parseFloat(p.profile.longitude) : null, name: p.profile && p.profile.pharmacy_name ? p.profile.pharmacy_name : (p.pharmacist && p.pharmacist.username ? p.pharmacist.username : 'Pharmacy')})).filter(p=>p.lat && p.lng);
+        if(coords.length===0) return;
+
+        const m = L.map('mini-map', {zoomControl: false}).setView([coords[0].lat, coords[0].lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution: '© OpenStreetMap contributors'}).addTo(m);
+        const group = [];
+        coords.forEach(c=>{
+            const mk = L.marker([c.lat, c.lng]).addTo(m).bindPopup(`<strong>${c.name}</strong>`);
+            group.push(mk);
+        });
+        const fg = L.featureGroup(group);
+        m.fitBounds(fg.getBounds().pad(0.1));
+    }catch(err){
+        console.error('Mini-map init error', err);
+    }
+});
+</script>
 
 <style>
 .sidebar .nav-link {

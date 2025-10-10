@@ -1,51 +1,734 @@
-/* MediFlow Admin custom styles */
-:root{
-  --mf-primary:#2563eb; /* blue-600 */
-  --mf-accent:#06b6d4; /* teal-400 */
-  --mf-bg:#0f172a; /* slate-900 */
-  --mf-card:#0b1220; /* dark card */
-  --mf-text:#e6eef8;
+,/* MediFlow Admin Custom Styles - Enhanced User-Friendly Edition */
+
+/* ============================================
+   ADMIN LAYOUT & CONTAINER
+   ============================================ */
+.admin-container {
+  background: var(--bg-page);
+  min-height: 100vh;
+  padding-bottom: 3rem;
 }
 
-/* General admin tweaks */
-#header{
-  background: linear-gradient(90deg, rgba(37,99,235,1) 0%, rgba(6,182,212,1) 100%);
+.admin-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: var(--fg-light);
+  padding: 2.5rem 0;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.admin-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+  opacity: 0.3;
+}
+
+.admin-logo {
+  position: relative;
+  z-index: 1;
+  width: 70px;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1.5rem;
+  backdrop-filter: blur(10px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.admin-logo i {
+  font-size: 2rem;
+  color: var(--fg-light);
+}
+
+.admin-title {
+  position: relative;
+  z-index: 1;
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.admin-subtitle {
+  position: relative;
+  z-index: 1;
+  opacity: 0.95;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* ============================================
+   WELCOME SECTION
+   ============================================ */
+.admin-welcome-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+}
+
+.admin-welcome-section h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+
+.admin-welcome-section .fa-hand-wave {
+  animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+}
+
+.admin-quick-stats {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+}
+
+/* ============================================
+   QUICK ACTIONS CARDS
+   ============================================ */
+.admin-quick-actions {
+  margin-top: 2rem;
+}
+
+.quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  color: var(--fg-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.quick-action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: var(--brand-primary);
+}
+
+.quick-action-card:hover::before {
+  opacity: 1;
+}
+
+.quick-action-card .icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.quick-action-card .icon-wrapper.bg-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.quick-action-card .icon-wrapper.bg-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.quick-action-card .icon-wrapper.bg-info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.quick-action-card .icon-wrapper.bg-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.quick-action-card .content {
+  flex: 1;
+}
+
+.quick-action-card .content h6 {
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--fg-primary);
+}
+
+.quick-action-card .content small {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+}
+
+.quick-action-card .arrow {
+  color: var(--fg-muted);
+  font-size: 1.25rem;
+  transition: transform 0.3s ease;
+}
+
+.quick-action-card:hover .arrow {
+  transform: translateX(4px);
+  color: var(--brand-primary);
+}
+
+/* ============================================
+   APP CARDS
+   ============================================ */
+.admin-app-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-app-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.card-header-custom {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.card-header-custom .app-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.card-header-custom h5 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.card-body-custom {
+  padding: 0;
+  flex: 1;
+}
+
+/* ============================================
+   MODEL LIST
+   ============================================ */
+.model-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.model-item {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.model-item:last-child {
+  border-bottom: none;
+}
+
+.model-link {
+  display: block;
+  padding: 1rem 1.5rem;
+  color: var(--fg-primary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.model-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--brand-primary);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.model-link:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, transparent 100%);
+  padding-left: 1.75rem;
+}
+
+.model-link:hover::before {
+  transform: scaleY(1);
+}
+
+.model-link i.fa-table {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+}
+
+.model-link span {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.model-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.model-actions .action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--brand-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.model-link:hover .action-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.model-actions .action-btn:hover {
+  background: var(--brand-700);
+  transform: scale(1.1);
+}
+
+.model-actions .fa-chevron-right {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.model-link:hover .fa-chevron-right {
+  color: var(--brand-primary);
+  transform: translateX(4px);
+}
+
+/* ============================================
+   HELP SECTION
+   ============================================ */
+.admin-help-section {
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.help-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.help-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: var(--brand-primary);
+}
+
+.help-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.help-card h6 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--fg-primary);
+}
+
+.help-card kbd {
+  background: var(--neutral-200);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   ADMIN NAVIGATION
+   ============================================ */
+.admin-nav {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+.admin-nav .nav-pills {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.admin-nav .nav-link {
+  color: var(--fg-secondary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  margin: 0;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 2px solid transparent;
+}
+
+.admin-nav .nav-link:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.admin-nav .nav-link.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.admin-nav .nav-link i {
+  margin-right: 0.5rem;
+}
+
+/* ============================================
+   BUTTONS & ACTIONS
+   ============================================ */
+.btn-admin {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 0.875rem 2rem;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-admin::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.btn-admin:hover::before {
+  left: 100%;
+}
+
+.btn-admin:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
   color: white;
 }
 
-#user-tools a, #site-name a{
-  color: rgba(255,255,255,0.9);
+.btn-outline-primary {
+  border: 2px solid var(--brand-primary);
+  color: var(--brand-primary);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
-/* Branding */
-.mf-branding .mf-brand{
-  display:flex;align-items:center;gap:10px;text-decoration:none;color:white;padding:8px 12px;border-radius:6px;
-}
-.mf-logo{
-  background: rgba(255,255,255,0.12);padding:6px 8px;border-radius:6px;font-weight:700;color:white;
-}
-.mf-title{font-size:18px;font-weight:700}
-
-/* Login page */
-.admin-login-container{display:flex;justify-content:center;align-items:center;min-height:70vh;padding:40px}
-.admin-login-card{background:linear-gradient(180deg, rgba(11,17,32,0.9), rgba(8,12,20,0.95));padding:30px;border-radius:12px;max-width:480px;width:100%;box-shadow:0 10px 30px rgba(2,6,23,0.6);color:var(--mf-text)}
-.admin-login-header{text-align:center;margin-bottom:16px}
-.mf-logo-large{width:72px;height:72px;border-radius:12px;background:var(--mf-primary);display:inline-flex;align-items:center;justify-content:center;font-weight:800;color:white;font-size:26px;margin:0 auto 8px}
-.admin-login-card h1{margin:0;font-size:22px}
-.admin-login-card .lead{color:rgba(230,238,248,0.8);margin-top:6px}
-
-/* Tweak admin forms */
-.form-row .field-box{background:#071223;padding:12px;border-radius:8px}
-
-/* Tables/rows */
-.change-list .results thead th{background:linear-gradient(90deg, rgba(37,99,235,0.08), rgba(6,182,212,0.06));}
-
-/* Make links and buttons match primary color */
-a.button, .submit-row input, .module .button {
-  background: var(--mf-primary); border-color: transparent; color: white; box-shadow: none;
+.btn-outline-primary:hover {
+  background: var(--brand-primary);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-/* Responsive */
-@media (max-width:600px){
-  .admin-login-card{padding:20px}
+/* ============================================
+   ALERTS & NOTIFICATIONS
+   ============================================ */
+.alert {
+  border-radius: 12px;
+  border: none;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.alert-info {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border-left: 4px solid #3b82f6;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border-left: 4px solid #10b981;
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-left: 4px solid #f59e0b;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border-left: 4px solid #ef4444;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1200px) {
+  .admin-app-card {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 1.5rem 0;
+  }
+  
+  .admin-title {
+    font-size: 1.75rem;
+  }
+  
+  .admin-subtitle {
+    font-size: 0.95rem;
+  }
+  
+  .admin-welcome-section {
+    padding: 1.5rem;
+  }
+  
+  .admin-welcome-section h2 {
+    font-size: 1.5rem;
+  }
+  
+  .admin-quick-stats {
+    margin-top: 1rem;
+    text-align: left !important;
+  }
+  
+  .quick-action-card {
+    padding: 1.25rem;
+  }
+  
+  .quick-action-card .icon-wrapper {
+    width: 45px;
+    height: 45px;
+    font-size: 1.25rem;
+  }
+  
+  .admin-nav {
+    padding: 0.75rem;
+  }
+  
+  .admin-nav .nav-link {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .help-card {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-logo {
+    width: 50px;
+    height: 50px;
+    margin-right: 1rem;
+  }
+  
+  .admin-logo i {
+    font-size: 1.5rem;
+  }
+  
+  .admin-title {
+    font-size: 1.5rem;
+  }
+  
+  .quick-action-card .content h6 {
+    font-size: 0.9rem;
+  }
+  
+  .quick-action-card .content small {
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================
+   DARK MODE SUPPORT
+   ============================================ */
+[data-theme="dark"] .admin-header {
+  background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
+}
+
+[data-theme="dark"] .admin-welcome-section {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+[data-theme="dark"] .admin-quick-stats,
+[data-theme="dark"] .quick-action-card,
+[data-theme="dark"] .admin-app-card,
+[data-theme="dark"] .help-card,
+[data-theme="dark"] .admin-nav {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .card-header-custom {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+[data-theme="dark"] .model-link:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.15) 0%, transparent 100%);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-app-card,
+.quick-action-card,
+.help-card {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.admin-app-card:nth-child(1) { animation-delay: 0.1s; }
+.admin-app-card:nth-child(2) { animation-delay: 0.2s; }
+.admin-app-card:nth-child(3) { animation-delay: 0.3s; }
+.admin-app-card:nth-child(4) { animation-delay: 0.4s; }
+.admin-app-card:nth-child(5) { animation-delay: 0.5s; }
+.admin-app-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(102, 126, 234, 0.3);
+  border-radius: 50%;
+  border-top-color: #667eea;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   TOOLTIPS & POPOVERS
+   ============================================ */
+.tooltip-inner {
+  background: #1f2937;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+  border-top-color: #1f2937;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+  .admin-header,
+  .admin-nav,
+  .admin-quick-actions,
+  .admin-help-section,
+  .btn,
+  .action-btn {
+    display: none !important;
+  }
+  
+  .admin-app-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
 }

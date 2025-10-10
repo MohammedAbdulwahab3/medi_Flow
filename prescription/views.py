@@ -239,7 +239,32 @@ def message_inbox(request):
     received_messages = Message.objects.filter(recipient=request.user).select_related('sender').order_by('-sent_at')
     sent_messages = Message.objects.filter(sender=request.user).select_related('recipient').order_by('-sent_at')
     unread_count = received_messages.filter(is_read=False).count()
-    
+    # JSON response for mobile API consumers
+    accept = request.META.get('HTTP_ACCEPT', '')
+    if 'application/json' in accept:
+        def _msg_dict(m):
+            return {
+                'id': m.id,
+                'sender': {
+                    'id': m.sender_id,
+                    'username': m.sender.username,
+                    'full_name': m.sender.full_name,
+                },
+                'recipient': {
+                    'id': m.recipient_id,
+                    'username': m.recipient.username,
+                    'full_name': m.recipient.full_name,
+                },
+                'subject': m.subject or '',
+                'body': m.body,
+                'sent_at': m.sent_at.isoformat(),
+                'is_read': m.is_read,
+            }
+        return JsonResponse({
+            'received': [_msg_dict(m) for m in received_messages],
+            'sent': [_msg_dict(m) for m in sent_messages],
+            'unread_count': unread_count,
+        })
     return render(request, 'frontend/messaging/inbox.html', {
         'received_messages': received_messages,
         'sent_messages': sent_messages,
@@ -251,6 +276,20 @@ def message_inbox(request):
 def message_compose(request):
     """Compose new message"""
     if request.method == 'POST':
+        # JSON body support
+        if request.META.get('CONTENT_TYPE', '').startswith('application/json'):
+            import json as _json
+            try:
+                data = _json.loads(request.body or '{}')
+            except Exception:
+                data = {}
+            form = MessageForm(sender=request.user, data=data)
+            if form.is_valid():
+                message = form.save(commit=False)
+                message.sender = request.user
+                message.save()
+                return JsonResponse({'ok': True, 'id': message.id}, status=201)
+            return JsonResponse({'ok': False, 'errors': form.errors}, status=400)
         form = MessageForm(sender=request.user, data=request.POST)
         if form.is_valid():
             message = form.save(commit=False)
@@ -286,6 +325,23 @@ def message_detail(request, message_id):
     ).select_related('sender', 'recipient').order_by('sent_at')
     
     if request.method == 'POST':
+        # JSON body support
+        if request.META.get('CONTENT_TYPE', '').startswith('application/json'):
+            import json as _json
+            try:
+                data = _json.loads(request.body or '{}')
+            except Exception:
+                data = {}
+            form = MessageReplyForm(data)
+            if form.is_valid():
+                reply = form.save(commit=False)
+                reply.sender = request.user
+                reply.recipient = message.sender if message.sender != request.user else message.recipient
+                reply.subject = f"Re: {original.subject}"
+                reply.parent_message = original
+                reply.save()
+                return JsonResponse({'ok': True, 'id': reply.id}, status=201)
+            return JsonResponse({'ok': False, 'errors': form.errors}, status=400)
         form = MessageReplyForm(request.POST)
         if form.is_valid():
             reply = form.save(commit=False)
@@ -299,6 +355,23 @@ def message_detail(request, message_id):
     else:
         form = MessageReplyForm()
     
+    # JSON response
+    accept = request.META.get('HTTP_ACCEPT', '')
+    if 'application/json' in accept:
+        def _msg_dict(m):
+            return {
+                'id': m.id,
+                'sender': m.sender.username,
+                'recipient': m.recipient.username,
+                'subject': m.subject or '',
+                'body': m.body,
+                'sent_at': m.sent_at.isoformat(),
+                'is_read': m.is_read,
+            }
+        return JsonResponse({
+            'message': _msg_dict(message),
+            'thread': [_msg_dict(m) for m in thread],
+        })
     return render(request, 'frontend/messaging/detail.html', {
         'message': message,
         'thread': thread,
@@ -314,7 +387,22 @@ def notification_list(request):
         'related_prescription', 'related_message'
     ).order_by('-created_at')
     unread_count = notifications.filter(is_read=False).count()
-    
+    # JSON response for mobile
+    accept = request.META.get('HTTP_ACCEPT', '')
+    if 'application/json' in accept:
+        def _notif(n):
+            return {
+                'id': n.id,
+                'type': n.notification_type,
+                'title': n.title,
+                'message': n.message,
+                'is_read': n.is_read,
+                'created_at': n.created_at.isoformat(),
+            }
+        return JsonResponse({
+            'notifications': [_notif(n) for n in notifications],
+            'unread_count': unread_count,
+        })
     return render(request, 'frontend/notifications/list.html', {
         'notifications': notifications,
         'unread_count': unread_count,
@@ -342,6 +430,8 @@ def notification_mark_all_read(request):
         is_read=True,
         read_at=timezone.now()
     )
+    if request.META.get('HTTP_ACCEPT', '').find('application/json') >= 0 or request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
     messages.success(request, 'All notifications marked as read')
     return redirect('prescription:notification_list')
 

@@ -38,6 +38,10 @@ LOGOUT_REDIRECT_URL = '/authentication/login/'
 # Application definition
 
 INSTALLED_APPS = [
+    # Custom apps should come before django.contrib.admin when using custom User model
+    'authentication_app.apps.AuthenticationAppConfig',
+    
+    # Django built-in apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,14 +49,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'authentication_app',
+    # Project apps
     'frontend',
     'medicine',
     'inventory',
     'prescription',
     'api',
 
-    
+    # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',

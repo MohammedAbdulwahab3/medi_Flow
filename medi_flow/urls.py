@@ -15,9 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path , include
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+
+# Ensure custom User model admin is loaded before admin.autodiscover
+# This prevents NoReverseMatch error for 'auth_user_changelist'
+import authentication_app.admin
 
 urlpatterns = [
     path('admin/', admin.site.urls),

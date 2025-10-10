@@ -1,0 +1,603 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item">
+  <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+</li>
+<li class="breadcrumb-item">
+  <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+</li>
+<li class="breadcrumb-item active">
+  {% if add %}Add{% else %}Change{% endif %} {{ opts.verbose_name }}
+</li>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-form-view">
+  <!-- Page Header -->
+  <div class="admin-page-header">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="page-title">
+          <i class="fas fa-{% if add %}plus{% else %}edit{% endif %} me-2"></i>
+          {% if add %}Add New{% else %}Edit{% endif %} {{ opts.verbose_name|capfirst }}
+        </h2>
+        <p class="text-muted mb-0">
+          {% if add %}
+          Fill in the form below to create a new {{ opts.verbose_name|lower }}
+          {% else %}
+          Update the information for this {{ opts.verbose_name|lower }}
+          {% endif %}
+        </p>
+      </div>
+      <div class="page-actions">
+        <a href="{% url opts|admin_urlname:'changelist' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <div class="admin-form-card">
+    <form method="post" {% if has_file_field %}enctype="multipart/form-data"{% endif %} novalidate>
+      {% csrf_token %}
+      
+      <!-- Error Messages -->
+      {% if errors %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="d-flex align-items-start">
+          <i class="fas fa-exclamation-triangle me-3 mt-1"></i>
+          <div class="flex-grow-1">
+            <h6 class="alert-heading mb-2">Please correct the errors below:</h6>
+            <ul class="mb-0">
+              {% for field in adminform.form %}
+                {% if field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
+                {% endif %}
+              {% endfor %}
+              {% if adminform.form.non_field_errors %}
+                {% for error in adminform.form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      <!-- Form Fields -->
+      <div class="form-sections">
+        {% for fieldset in adminform %}
+        <div class="form-section">
+          {% if fieldset.name %}
+          <div class="section-header">
+            <h5 class="section-title">
+              <i class="fas fa-folder-open me-2"></i>
+              {{ fieldset.name }}
+            </h5>
+            {% if fieldset.description %}
+            <p class="section-description">{{ fieldset.description }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <div class="section-body">
+            <div class="row g-4">
+              {% for line in fieldset %}
+              {% for field in line %}
+              <div class="col-md-{% if field.field.field.widget.attrs.wide %}12{% else %}6{% endif %}">
+                <div class="form-field {% if field.field.errors %}has-error{% endif %}">
+                  <!-- Field Label -->
+                  <label for="{{ field.field.id_for_label }}" class="form-label">
+                    {{ field.field.label }}
+                    {% if field.field.field.required %}
+                    <span class="required-indicator">*</span>
+                    {% endif %}
+                  </label>
+
+                  <!-- Field Help Text (before) -->
+                  {% if field.field.help_text %}
+                  <div class="field-help-text mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    {{ field.field.help_text|safe }}
+                  </div>
+                  {% endif %}
+
+                  <!-- Field Widget -->
+                  <div class="field-widget">
+                    {{ field.field }}
+                  </div>
+
+                  <!-- Field Errors -->
+                  {% if field.field.errors %}
+                  <div class="field-errors">
+                    {% for error in field.field.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle me-1"></i>
+                      {{ error }}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Inline Forms (if any) -->
+      {% if inline_admin_formsets %}
+      <div class="inline-forms-section">
+        {% for inline_admin_formset in inline_admin_formsets %}
+        <div class="inline-formset">
+          <div class="inline-header">
+            <h5 class="inline-title">
+              <i class="fas fa-layer-group me-2"></i>
+              {{ inline_admin_formset.opts.verbose_name_plural|capfirst }}
+            </h5>
+          </div>
+          <div class="inline-body">
+            {{ inline_admin_formset.formset.management_form }}
+            {% for inline_admin_form in inline_admin_formset %}
+            <div class="inline-form-row">
+              {{ inline_admin_form.form }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="action-buttons-left">
+            {% if not add %}
+            {% if has_delete_permission %}
+            <a href="{% url opts|admin_urlname:'delete' original.pk|admin_urlquote %}" 
+               class="btn btn-danger"
+               onclick="return confirm('Are you sure you want to delete this {{ opts.verbose_name|lower }}?');">
+              <i class="fas fa-trash me-2"></i>Delete
+            </a>
+            {% endif %}
+            {% if show_save_as_new %}
+            <button type="submit" name="_saveasnew" class="btn btn-outline-primary">
+              <i class="fas fa-copy me-2"></i>Save as New
+            </button>
+            {% endif %}
+            {% endif %}
+          </div>
+
+          <div class="action-buttons-right">
+            <a href="{% url opts|admin_urlname:'changelist' %}" class="btn btn-outline-secondary">
+              <i class="fas fa-times me-2"></i>Cancel
+            </a>
+            {% if show_save_and_add_another %}
+            <button type="submit" name="_addanother" class="btn btn-outline-primary">
+              <i class="fas fa-plus me-2"></i>Save and Add Another
+            </button>
+            {% endif %}
+            {% if show_save_and_continue %}
+            <button type="submit" name="_continue" class="btn btn-outline-primary">
+              <i class="fas fa-save me-2"></i>Save and Continue Editing
+            </button>
+            {% endif %}
+            <button type="submit" name="_save" class="btn btn-primary btn-save">
+              <i class="fas fa-check me-2"></i>Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Help Panel -->
+  <div class="help-panel mt-4">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="help-card">
+          <div class="help-icon">
+            <i class="fas fa-asterisk"></i>
+          </div>
+          <h6>Required Fields</h6>
+          <p class="text-muted small mb-0">Fields marked with <span class="required-indicator">*</span> are required</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="help-card">
+          <div class="help-icon">
+            <i class="fas fa-keyboard"></i>
+          </div>
+          <h6>Quick Save</h6>
+          <p class="text-muted small mb-0">Press <kbd>Ctrl</kbd> + <kbd>S</kbd> to save quickly</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="help-card">
+          <div class="help-icon">
+            <i class="fas fa-question-circle"></i>
+          </div>
+          <h6>Need Help?</h6>
+          <p class="text-muted small mb-0">Hover over <i class="fas fa-info-circle"></i> icons for tips</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Form View Styles */
+.admin-form-view {
+  padding: 0;
+}
+
+.admin-form-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.admin-form-card form {
+  padding: 2rem;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.section-description {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0 0;
+}
+
+/* Form Fields */
+.form-field {
+  margin-bottom: 0;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--fg-secondary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.required-indicator {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.field-help-text {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1e40af;
+}
+
+.field-widget input[type="text"],
+.field-widget input[type="email"],
+.field-widget input[type="password"],
+.field-widget input[type="number"],
+.field-widget input[type="date"],
+.field-widget input[type="time"],
+.field-widget input[type="url"],
+.field-widget textarea,
+.field-widget select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.field-widget input:focus,
+.field-widget textarea:focus,
+.field-widget select:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.field-widget textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-field.has-error .field-widget input,
+.form-field.has-error .field-widget textarea,
+.form-field.has-error .field-widget select {
+  border-color: #ef4444;
+}
+
+.field-errors {
+  margin-top: 0.5rem;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+/* Checkbox and Radio */
+.field-widget input[type="checkbox"],
+.field-widget input[type="radio"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+/* File Upload */
+.field-widget input[type="file"] {
+  padding: 0.5rem;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.field-widget input[type="file"]:hover {
+  border-color: var(--brand-primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+/* Inline Forms */
+.inline-forms-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.inline-formset {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.inline-header {
+  margin-bottom: 1rem;
+}
+
+.inline-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.inline-form-row {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+/* Form Actions */
+.form-actions {
+  background: #f8f9fa;
+  padding: 1.5rem 2rem;
+  margin: 2rem -2rem -2rem -2rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Help Panel */
+.help-panel .help-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.help-panel .help-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.help-panel .help-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.25rem;
+}
+
+.help-panel h6 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--fg-primary);
+}
+
+.help-panel kbd {
+  background: var(--neutral-200);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-form-card form {
+    padding: 1.5rem;
+  }
+  
+  .form-actions {
+    padding: 1rem 1.5rem;
+    margin: 1.5rem -1.5rem -1.5rem -1.5rem;
+  }
+  
+  .action-buttons-left,
+  .action-buttons-right {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-actions .d-flex {
+    flex-direction: column;
+  }
+  
+  .action-buttons-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .action-buttons-right .btn {
+    width: 100%;
+  }
+}
+
+/* Dark Mode */
+[data-theme="dark"] .admin-form-card,
+[data-theme="dark"] .inline-formset,
+[data-theme="dark"] .inline-form-row,
+[data-theme="dark"] .help-panel .help-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .field-widget input,
+[data-theme="dark"] .field-widget textarea,
+[data-theme="dark"] .field-widget select {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .form-actions {
+  background: var(--bg-tertiary);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Ctrl+S to save
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      const saveBtn = document.querySelector('.btn-save');
+      if (saveBtn) {
+        saveBtn.click();
+      }
+    }
+  });
+  
+  // Add loading state to save button
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function() {
+      const saveBtn = document.querySelector('.btn-save');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+      }
+    });
+  }
+  
+  // Auto-resize textareas
+  document.querySelectorAll('textarea').forEach(textarea => {
+    textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+    });
+  });
+  
+  // Character counter for text fields with maxlength
+  document.querySelectorAll('input[maxlength], textarea[maxlength]').forEach(field => {
+    const maxLength = field.getAttribute('maxlength');
+    const counter = document.createElement('div');
+    counter.className = 'character-counter text-muted small mt-1';
+    counter.textContent = `0 / ${maxLength} characters`;
+    field.parentNode.appendChild(counter);
+    
+    field.addEventListener('input', function() {
+      const length = this.value.length;
+      counter.textContent = `${length} / ${maxLength} characters`;
+      if (length > maxLength * 0.9) {
+        counter.style.color = '#ef4444';
+      } else {
+        counter.style.color = '';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
