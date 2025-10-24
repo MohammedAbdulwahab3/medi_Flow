@@ -1,0 +1,586 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block admin_content %}
+<div class="admin-list-view">
+  <!-- Page Header -->
+  <div class="admin-page-header">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="page-title">
+          <i class="fas fa-users me-2"></i>
+          Users
+        </h2>
+        <p class="text-muted mb-0">
+          Manage and view all system users
+        </p>
+      </div>
+      <div class="page-actions">
+        <!-- Add User button now visible as requested -->
+        {% if has_add_permission %}
+        <a href="{% url cl.opts|admin_urlname:'add' %}" class="btn btn-primary btn-add">
+          <i class="fas fa-plus me-2"></i>Add User
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="admin-stats-row mb-4">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-primary">
+            <i class="fas fa-database"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ cl.result_count }}</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+        </div>
+      </div>
+      {% if cl.formset and cl.result_count %}
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-success">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ cl.result_count }}</div>
+            <div class="stat-label">Active Users</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="admin-toolbar">
+    <div class="row g-3 mb-4">
+      <!-- Search Box -->
+      {% if cl.search_fields %}
+      <div class="col-md-6">
+        <div class="search-box">
+          <form method="get" class="search-form">
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="fas fa-search"></i>
+              </span>
+              <input type="text" 
+                     name="{{ search_var }}" 
+                     value="{{ cl.query }}" 
+                     class="form-control" 
+                     placeholder="Search users..."
+                     autofocus>
+              <button type="submit" class="btn btn-primary">Search</button>
+              {% if cl.query %}
+              <a href="?" class="btn btn-outline-secondary">
+                <i class="fas fa-times"></i>
+              </a>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Filter Toggle -->
+      {% if cl.has_filters %}
+      <div class="col-md-6 text-end">
+        <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel">
+          <i class="fas fa-filter me-2"></i>Filters
+          {% if cl.get_filters_params %}
+          <span class="badge bg-primary ms-2">{{ cl.get_filters_params|length }}</span>
+          {% endif %}
+        </button>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Filter Panel -->
+    {% if cl.has_filters %}
+    <div class="collapse {% if cl.get_filters_params %}show{% endif %}" id="filterPanel">
+      <div class="filter-panel">
+        <h6 class="filter-title">
+          <i class="fas fa-sliders-h me-2"></i>Filter Options
+        </h6>
+        <div class="row g-3">
+          {% for spec in cl.filter_specs %}
+          <div class="col-md-4">
+            <div class="filter-group">
+              <label class="filter-label">{{ spec.title }}</label>
+              <div class="filter-choices">
+                {% for choice in spec.choices %}
+                <a href="{{ choice.query_string|iriencode }}" 
+                   class="filter-choice {% if choice.selected %}active{% endif %}">
+                  {{ choice.display }}
+                  {% if choice.selected %}
+                  <i class="fas fa-check ms-2"></i>
+                  {% endif %}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Results Table -->
+  <div class="admin-results-table">
+    {% if cl.result_count %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            {% if action_form and actions_on_top and cl.show_admin_actions %}
+            <th class="action-checkbox-column">
+              <input type="checkbox" id="action-toggle" class="form-check-input">
+            </th>
+            {% endif %}
+            {% for header in result_headers %}
+            <th class="{{ header.class_attrib }}">
+              {% if header.sortable %}
+              <a href="{{ header.url_primary }}" class="sortable-header">
+                {{ header.text|capfirst }}
+                {% if header.sorted %}
+                <i class="fas fa-sort-{{ header.ascending|yesno:'up,down' }} ms-1"></i>
+                {% else %}
+                <i class="fas fa-sort ms-1 text-muted"></i>
+                {% endif %}
+              </a>
+              {% else %}
+              {{ header.text|capfirst }}
+              {% endif %}
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for result in results %}
+          <tr class="result-row">
+            {% if action_form and actions_on_top and cl.show_admin_actions %}
+            <td class="action-checkbox-column">
+              <input type="checkbox" name="_selected_action" value="{{ result.pk }}" class="form-check-input action-select">
+            </td>
+            {% endif %}
+            {% for item in result %}
+            <td class="{{ item.field.name }}">{{ item }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if cl.result_count > cl.list_per_page %}
+    <div class="admin-pagination">
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          {% if cl.result_count != cl.full_result_count %}
+          <li class="page-item disabled">
+            <span class="page-link">
+              <i class="fas fa-info-circle me-2"></i>
+              {{ cl.result_count }} of {{ cl.full_result_count }} total
+            </span>
+          </li>
+          {% endif %}
+          
+          {% if pagination_required %}
+          {% if page_num > 1 %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if cl.is_popup %}_popup=1&{% endif %}p={{ page_num|add:'-1' }}{{ cl.get_query_string }}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+          {% endif %}
+          
+          {% for num in page_range %}
+          {% if num == '.' %}
+          <li class="page-item disabled"><span class="page-link">...</span></li>
+          {% else %}
+          <li class="page-item {% if num == page_num %}active{% endif %}">
+            <a class="page-link" href="?{% if cl.is_popup %}_popup=1&{% endif %}p={{ num }}{{ cl.get_query_string }}">
+              {{ num }}
+            </a>
+          </li>
+          {% endif %}
+          {% endfor %}
+          
+          {% if page_num < num_pages %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if cl.is_popup %}_popup=1&{% endif %}p={{ page_num|add:'1' }}{{ cl.get_query_string }}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+          {% endif %}
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <h4>No users found</h4>
+      <p class="text-muted">
+        {% if cl.query %}
+        No results match your search "{{ cl.query }}". Try different keywords.
+        {% else %}
+        Get started by adding your first user.
+        {% endif %}
+      </p>
+      {% if has_add_permission %}
+      <a href="{% url cl.opts|admin_urlname:'add' %}" class="btn btn-primary mt-3">
+        <i class="fas fa-plus me-2"></i>Add User
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Action Bar (if actions available) -->
+  {% if action_form and actions_on_bottom and cl.show_admin_actions %}
+  <div class="admin-action-bar">
+    <form method="post" class="action-form">
+      {% csrf_token %}
+      <div class="d-flex align-items-center gap-3">
+        <span class="text-muted">
+          <span id="selected-count">0</span> selected
+        </span>
+        <select name="action" class="form-select" style="width: auto;">
+          <option value="">---------</option>
+          {% for action in action_choices %}
+          <option value="{{ action.value }}">{{ action.display }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary" name="index" value="0">
+          <i class="fas fa-play me-2"></i>Go
+        </button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+/* List View Styles */
+.admin-list-view {
+  padding: 0;
+}
+
+.admin-page-header {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+/* Stats Cards */
+.admin-stats-row .stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.admin-stats-row .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.stat-icon.bg-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-icon.bg-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+}
+
+/* Search Box */
+.search-box {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+}
+
+.search-form .input-group-text {
+  background: transparent;
+  border-right: none;
+}
+
+.search-form .form-control {
+  border-left: none;
+  border-right: none;
+}
+
+.search-form .form-control:focus {
+  box-shadow: none;
+  border-color: var(--border-color);
+}
+
+/* Filter Panel */
+.filter-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.filter-title {
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-bottom: 1rem;
+}
+
+.filter-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--fg-secondary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.filter-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-choice {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+  text-decoration: none;
+  color: var(--fg-primary);
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-choice:hover {
+  border-color: var(--brand-primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.filter-choice.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Results Table */
+.admin-results-table {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.admin-results-table table {
+  margin: 0;
+}
+
+.admin-results-table thead th {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: var(--fg-secondary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem;
+  border: none;
+}
+
+.sortable-header {
+  color: var(--fg-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.sortable-header:hover {
+  color: var(--brand-primary);
+}
+
+.admin-results-table tbody td {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.result-row {
+  transition: background 0.2s ease;
+}
+
+.result-row:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 3rem;
+  color: var(--brand-primary);
+}
+
+.empty-state h4 {
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* Pagination */
+.admin-pagination {
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.admin-pagination .page-link {
+  border-radius: 8px;
+  margin: 0 0.25rem;
+  border: 1px solid var(--border-color);
+  color: var(--fg-primary);
+  padding: 0.5rem 0.75rem;
+}
+
+.admin-pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+}
+
+/* Action Bar */
+.admin-action-bar {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  margin-top: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-page-header {
+    padding: 1.5rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .admin-stats-row .stat-card {
+    margin-bottom: 1rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Select all checkbox functionality
+  const toggleCheckbox = document.getElementById('action-toggle');
+  if (toggleCheckbox) {
+    toggleCheckbox.addEventListener('change', function() {
+      const checkboxes = document.querySelectorAll('.action-select');
+      checkboxes.forEach(cb => cb.checked = this.checked);
+      updateSelectedCount();
+    });
+  }
+  
+  // Update selected count
+  function updateSelectedCount() {
+    const checked = document.querySelectorAll('.action-select:checked').length;
+    const countEl = document.getElementById('selected-count');
+    if (countEl) {
+      countEl.textContent = checked;
+    }
+  }
+  
+  // Listen to individual checkbox changes
+  document.querySelectorAll('.action-select').forEach(cb => {
+    cb.addEventListener('change', updateSelectedCount);
+  });
+});
+</script>
+{% endblock %}

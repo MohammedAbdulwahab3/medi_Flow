@@ -5,6 +5,11 @@ from django.utils.translation import gettext_lazy as _
 from .models import User, ManufacturerProfile
 from .forms import AdminUserCreateForm
 
+# Customize the admin site header and title
+admin.site.site_header = "MediFlow Administration"
+admin.site.site_title = "MediFlow Admin Portal"
+admin.site.index_title = "Welcome to MediFlow Administration"
+
 # Unregister Django's default User and Group models if they were registered
 # This prevents the NoReverseMatch error for 'auth_user_changelist'
 try:
@@ -19,14 +24,29 @@ try:
 except (admin.sites.NotRegistered, ImportError):
     pass
 
-# Unregister the default Group admin if you want to customize it later
-# admin.site.unregister(Group)
-
 class UserAdmin(BaseUserAdmin):
     add_form = AdminUserCreateForm
     model = User
     list_display = ('username', 'email', 'role', 'license_number', 'is_staff', 'is_active')
     list_filter = ('role', 'is_staff', 'is_active', 'is_superuser')
+    
+    # Customize the changelist page title
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Manage Users'
+        return super().changelist_view(request, extra_context=extra_context)
+    
+    # Customize the add page title
+    def add_view(self, request, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Add User'
+        return super().add_view(request, form_url, extra_context=extra_context)
+    
+    # Customize the change page title
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Edit User'
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -51,13 +71,5 @@ class UserAdmin(BaseUserAdmin):
 # Register the custom User model with the custom UserAdmin
 admin.site.register(User, UserAdmin)
 
-# Re-register Group model
-from django.contrib.auth.models import Group
-from django.contrib.auth.admin import GroupAdmin
-admin.site.register(Group, GroupAdmin)
-
-
-@admin.register(ManufacturerProfile)
-class ManufacturerProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'company_name', 'phone', 'contact_email')
-    search_fields = ('company_name', 'user__username', 'user__email')
+# Hide Group and other models - only show User in admin
+# ManufacturerProfile and PharmacistProfile not registered

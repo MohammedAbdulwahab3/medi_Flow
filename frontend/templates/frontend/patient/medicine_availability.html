@@ -153,6 +153,9 @@
                                         <strong class="text-success">In Stock</strong>
                                         <h5 class="mb-0 text-success">{{ pharmacy.total_stock }} units</h5>
                                     </div>
+                                </div>
+                            </div>
+                            
                             <!-- Price Info -->
                             <div class="col-md-3">
                                 <div class="price-info">
@@ -170,19 +173,21 @@
                                         <small class="text-muted">Price not set</small>
                                     {% endif %}
                                 </div>
+                            </div>
+                            
                             <!-- Actions -->
                             <div class="col-md-2 text-end">
-                                <button class="btn btn-primary btn-sm" data-index="{{ forloop.counter0 }}" data-toggle="collapse" data-target="#pharmacy-details-{{ forloop.counter0 }}">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
                                 {% if pharmacy.profile.latitude and pharmacy.profile.longitude %}
-                                <button class="btn btn-outline-secondary btn-sm mt-2" 
+                                <button class="btn btn-primary btn-sm mb-2" 
                                     data-lat="{{ pharmacy.profile.latitude|default_if_none:'' }}" 
                                     data-lng="{{ pharmacy.profile.longitude|default_if_none:'' }}" 
-                                    onclick="focusPharmacy(this.dataset.lat, this.dataset.lng)">
-                                    <i class="fas fa-map-pin"></i> Map
+                                    onclick="getDirections(this.dataset.lat, this.dataset.lng, '{{ pharmacy.profile.pharmacy_name|default:pharmacy.pharmacist.username|escapejs }}')">
+                                    <i class="fas fa-directions"></i> Directions
                                 </button>
                                 {% endif %}
+                                <button class="btn btn-outline-secondary btn-sm" data-index="{{ forloop.counter0 }}" data-toggle="collapse" data-target="#pharmacy-details-{{ forloop.counter0 }}">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
                             </div>
                         </div>
 
@@ -333,6 +338,86 @@ function focusPharmacy(lat, lng) {
             marker.openPopup();
         }
     });
+}
+
+function getDirections(lat, lng, pharmacyName) {
+    // Coerce to numbers and validate
+    const latNum = typeof lat === 'number' ? lat : parseFloat(lat);
+    const lngNum = typeof lng === 'number' ? lng : parseFloat(lng);
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+        alert('Location coordinates not available for this pharmacy.');
+        return;
+    }
+
+    // Scroll to map
+    document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Focus on pharmacy location with higher zoom
+    setTimeout(() => {
+        map.setView([latNum, lngNum], 17);
+        
+        // Open popup of the marker at this location
+        markers.forEach(marker => {
+            const markerPos = marker.getLatLng();
+            if (Math.abs(markerPos.lat - latNum) < 0.0001 && Math.abs(markerPos.lng - lngNum) < 0.0001) {
+                marker.openPopup();
+            }
+        });
+        
+        // Add direction line from user (if geolocation available)
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    
+                    // Draw line from user to pharmacy
+                    const routeLine = L.polyline(
+                        [[userLat, userLng], [latNum, lngNum]],
+                        {color: 'blue', weight: 3, opacity: 0.7, dashArray: '10, 10'}
+                    ).addTo(map);
+                    
+                    // Add user marker
+                    const userMarker = L.marker([userLat, userLng], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                    userMarker.bindPopup('<strong>Your Location</strong>').openPopup();
+                    
+                    // Fit bounds to show both markers
+                    const bounds = L.latLngBounds([[userLat, userLng], [latNum, lngNum]]);
+                    map.fitBounds(bounds, {padding: [50, 50]});
+                    
+                    // Calculate distance
+                    const distance = map.distance([userLat, userLng], [latNum, lngNum]);
+                    const distanceKm = (distance / 1000).toFixed(2);
+                    
+                    // Show distance in a toast/alert
+                    setTimeout(() => {
+                        alert(`Distance to ${pharmacyName}: ${distanceKm} km\n\nBlue dashed line shows the direct route.`);
+                    }, 500);
+                    
+                    // Open in Google Maps (optional)
+                    const openInMaps = confirm('Would you like to open this location in Google Maps for turn-by-turn directions?');
+                    if (openInMaps) {
+                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${latNum},${lngNum}`, '_blank');
+                    }
+                },
+                (error) => {
+                    // Geolocation failed, just show pharmacy location
+                    alert(`Showing ${pharmacyName} on map.\n\nEnable location access for directions from your location.`);
+                }
+            );
+        } else {
+            alert(`Showing ${pharmacyName} on map.\n\nYour browser doesn't support geolocation.`);
+        }
+    }, 500);
 }
 
 function viewPharmacyDetails(index) {

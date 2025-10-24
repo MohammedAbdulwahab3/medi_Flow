@@ -15,6 +15,7 @@ from .forms import (
     DoctorPrescriptionForm, PharmacistDispenseForm, DoctorHistoryEntryForm,
     DoctorProfileForm, MessageForm, MessageReplyForm, PatientDoctorAssignmentForm
 )
+from .communication_utils import send_message, get_contactable_users
 
 
 def is_doctor(user):
@@ -275,6 +276,9 @@ def message_inbox(request):
 @login_required
 def message_compose(request):
     """Compose new message"""
+    # Get contactable users based on role
+    contacts = get_contactable_users(request.user)
+    
     if request.method == 'POST':
         # JSON body support
         if request.META.get('CONTENT_TYPE', '').startswith('application/json'):
@@ -288,6 +292,17 @@ def message_compose(request):
                 message = form.save(commit=False)
                 message.sender = request.user
                 message.save()
+                # Create notification via utility
+                from .communication_utils import create_notification
+                from django.urls import reverse
+                create_notification(
+                    user=message.recipient,
+                    notification_type='message_received',
+                    title=f'New message from {request.user.full_name or request.user.username}',
+                    message=f'Subject: {message.subject}',
+                    related_message=message,
+                    action_url=reverse('prescription:message_detail', kwargs={'message_id': message.id})
+                )
                 return JsonResponse({'ok': True, 'id': message.id}, status=201)
             return JsonResponse({'ok': False, 'errors': form.errors}, status=400)
         form = MessageForm(sender=request.user, data=request.POST)
@@ -295,12 +310,26 @@ def message_compose(request):
             message = form.save(commit=False)
             message.sender = request.user
             message.save()
+            # Create notification via utility
+            from .communication_utils import create_notification
+            from django.urls import reverse
+            create_notification(
+                user=message.recipient,
+                notification_type='message_received',
+                title=f'New message from {request.user.full_name or request.user.username}',
+                message=f'Subject: {message.subject}',
+                related_message=message,
+                action_url=reverse('prescription:message_detail', kwargs={'message_id': message.id})
+            )
             messages.success(request, 'Message sent successfully')
             return redirect('prescription:message_inbox')
     else:
         form = MessageForm(sender=request.user)
     
-    return render(request, 'frontend/messaging/compose.html', {'form': form})
+    return render(request, 'frontend/messaging/compose.html', {
+        'form': form,
+        'contacts': contacts
+    })
 
 
 @login_required

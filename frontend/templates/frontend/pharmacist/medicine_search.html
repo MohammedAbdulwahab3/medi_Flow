@@ -54,7 +54,7 @@
                     <div class="card h-100 shadow-sm">
                         <!-- Medicine Image -->
                         {% if r.medicine.image %}
-                        <img src="{{ r.medicine.image.url }}" class="card-img-top" alt="{{ r.medicine.name }}" style="height: 200px; object-fit: cover;">
+                        <img src="{{ r.medicine.image }}" class="card-img-top" alt="{{ r.medicine.name }}" style="height: 200px; object-fit: cover;">
                         {% else %}
                         <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
                             <i class="fas fa-pills fa-4x text-muted"></i>
@@ -98,10 +98,7 @@
                             
                             <!-- Action Buttons -->
                             <div class="d-grid gap-2">
-                                <button class="btn btn-primary" onclick="openPharmRequestModal({{ r.medicine.id }}, '{{ r.medicine.name|escapejs }}')">
-                                    <i class="fas fa-shopping-cart"></i> Request from Manufacturer
-                                </button>
-                                <a class="btn btn-outline-secondary" href="{% url 'frontend:pharmacist_medicine_detail' r.medicine.id %}">
+                                <a class="btn btn-primary" href="{% url 'frontend:pharmacist_medicine_detail' r.medicine.id %}">
                                     <i class="fas fa-info-circle"></i> View Details
                                 </a>
                             </div>

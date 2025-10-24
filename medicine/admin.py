@@ -8,6 +8,16 @@ class MedicineAdmin(admin.ModelAdmin):
     search_fields = ('name', 'generic_name', 'description')
     list_editable = ('is_active',)
     readonly_fields = ('created_at', 'updated_at')
+    
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Manage Medicines'
+        return super().changelist_view(request, extra_context=extra_context)
+    
+    def add_view(self, request, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Add Medicine'
+        return super().add_view(request, form_url, extra_context=extra_context)
 
 
 @admin.register(MedicineBatch)
@@ -18,3 +28,13 @@ class MedicineBatchAdmin(admin.ModelAdmin):
     list_editable = ('is_active', 'cost_price', 'selling_price')
     readonly_fields = ('created_at',)
     date_hierarchy = 'manufacturing_date'
+    
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Manage Medicine Batches'
+        return super().changelist_view(request, extra_context=extra_context)
+    
+    def add_view(self, request, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Add Medicine Batch'
+        return super().add_view(request, form_url, extra_context=extra_context)

@@ -31,6 +31,82 @@
                                 <div class="text-danger">{{ form.recipient.errors }}</div>
                             {% endif %}
                         </div>
+                        
+                        <!-- Quick Contact Selection -->
+                        {% if contacts %}
+                        <div class="mb-3">
+                            <label class="form-label">Quick Select:</label>
+                            <div class="row g-2">
+                                {% if contacts.pharmacists %}
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title mb-2"><i class="fas fa-pills"></i> Pharmacists</h6>
+                                            <div class="list-group list-group-flush">
+                                                {% for pharmacist in contacts.pharmacists %}
+                                                <button type="button" class="list-group-item list-group-item-action py-1 px-2" onclick="selectRecipient('{{ pharmacist.id }}', '{{ pharmacist.full_name|default:pharmacist.username }}')">
+                                                    {{ pharmacist.full_name|default:pharmacist.username }}
+                                                </button>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if contacts.manufacturers %}
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title mb-2"><i class="fas fa-industry"></i> Manufacturers</h6>
+                                            <div class="list-group list-group-flush">
+                                                {% for manufacturer in contacts.manufacturers %}
+                                                <button type="button" class="list-group-item list-group-item-action py-1 px-2" onclick="selectRecipient('{{ manufacturer.id }}', '{{ manufacturer.full_name|default:manufacturer.username }}')">
+                                                    {{ manufacturer.full_name|default:manufacturer.username }}
+                                                </button>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if contacts.doctors %}
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title mb-2"><i class="fas fa-user-md"></i> Doctors</h6>
+                                            <div class="list-group list-group-flush">
+                                                {% for doctor in contacts.doctors %}
+                                                <button type="button" class="list-group-item list-group-item-action py-1 px-2" onclick="selectRecipient('{{ doctor.id }}', '{{ doctor.full_name|default:doctor.username }}')">
+                                                    Dr. {{ doctor.full_name|default:doctor.username }}
+                                                </button>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if contacts.patients %}
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title mb-2"><i class="fas fa-user"></i> Patients</h6>
+                                            <div class="list-group list-group-flush">
+                                                {% for patient in contacts.patients %}
+                                                <button type="button" class="list-group-item list-group-item-action py-1 px-2" onclick="selectRecipient('{{ patient.id }}', '{{ patient.full_name|default:patient.username }}')">
+                                                    {{ patient.full_name|default:patient.username }}
+                                                </button>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <div class="mb-3">
                             <label for="{{ form.subject.id_for_label }}" class="form-label">Subject:</label>
@@ -60,4 +136,21 @@
         </div>
     </div>
 </div>
+
+<script>
+function selectRecipient(recipientId, recipientName) {
+    // Set the recipient select field
+    const recipientSelect = document.querySelector('select[name="recipient"]');
+    if (recipientSelect) {
+        recipientSelect.value = recipientId;
+        
+        // Optionally update a display field if using Select2 or similar
+        const event = new Event('change', { bubbles: true });
+        recipientSelect.dispatchEvent(event);
+        
+        // Scroll to the form
+        document.querySelector('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+</script>
 {% endblock %}

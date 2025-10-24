@@ -36,27 +36,21 @@
         </h6>
         <ul class="nav flex-column mb-2">
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'reorder_management' %}active{% endif %}" 
-                   href="{% url 'frontend:reorder_management' %}">
-                    <i class="fas fa-redo"></i> Reorder Management
+                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_medicine_search' %}active{% endif %}" 
+                   href="{% url 'frontend:pharmacist_medicine_search' %}">
+                    <i class="fas fa-search"></i> Search Medicines
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_reservations' %}active{% endif %}" 
                    href="{% url 'frontend:pharmacist_reservations' %}">
-                    <i class="fas fa-shopping-cart"></i> Reservations
+                    <i class="fas fa-inbox"></i> Medicine Requests
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_transfers' %}active{% endif %}" 
                    href="{% url 'frontend:pharmacist_transfers' %}">
-                    <i class="fas fa-exchange-alt"></i> Transfers
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'pharmacist_medicine_search' %}active{% endif %}" 
-                   href="{% url 'frontend:pharmacist_medicine_search' %}">
-                    <i class="fas fa-search"></i> Medicine Search
+                    <i class="fas fa-truck"></i> Incoming Transfers
                 </a>
             </li>
         </ul>

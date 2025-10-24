@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-bell"></i> Notifications</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <form method="post" action="{% url 'frontend:mark_all_notifications_read' %}" class="me-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-check-double"></i> Mark All Read
+                </button>
+            </form>
+            <a href="{% url 'frontend:communication_center' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="typeFilter" class="form-label">Type</label>
+                    <select name="type" id="typeFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Types</option>
+                        {% for type_val, type_label in notification_type_choices %}
+                        <option value="{{ type_val }}" {% if notification_type == type_val %}selected{% endif %}>
+                            {{ type_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="statusFilter" class="form-label">Status</label>
+                    <select name="status" id="statusFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if read_status == 'all' %}selected{% endif %}>All</option>
+                        <option value="unread" {% if read_status == 'unread' %}selected{% endif %}>Unread</option>
+                        <option value="read" {% if read_status == 'read' %}selected{% endif %}>Read</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if notifications %}
+            <div class="list-group list-group-flush">
+                {% for notif in notifications %}
+                <div class="list-group-item {% if not notif.is_read %}bg-light border-start border-primary border-4{% endif %}">
+                    <div class="row align-items-center">
+                        <div class="col-md-9">
+                            <div class="d-flex w-100 justify-content-between mb-2">
+                                <h6 class="mb-0">
+                                    {% if not notif.is_read %}
+                                    <i class="fas fa-circle text-primary" style="font-size: 8px;"></i>
+                                    {% endif %}
+                                    
+                                    <!-- Icon based on type -->
+                                    {% if 'prescription' in notif.notification_type %}
+                                        <i class="fas fa-prescription text-info"></i>
+                                    {% elif 'transfer' in notif.notification_type %}
+                                        <i class="fas fa-truck text-success"></i>
+                                    {% elif 'reservation' in notif.notification_type %}
+                                        <i class="fas fa-box text-warning"></i>
+                                    {% elif 'message' in notif.notification_type %}
+                                        <i class="fas fa-envelope text-primary"></i>
+                                    {% elif 'stock' in notif.notification_type or 'expiry' in notif.notification_type %}
+                                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                                    {% else %}
+                                        <i class="fas fa-bell text-secondary"></i>
+                                    {% endif %}
+                                    
+                                    {{ notif.title }}
+                                    <span class="badge bg-secondary">{{ notif.get_notification_type_display }}</span>
+                                </h6>
+                                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-0 text-muted">{{ notif.message }}</p>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            {% if notif.action_url %}
+                            <a href="{{ notif.action_url }}" class="btn btn-sm btn-primary mb-1">
+                                <i class="fas fa-external-link-alt"></i> View
+                            </a>
+                            {% endif %}
+                            
+                            {% if not notif.is_read %}
+                            <form method="post" action="{% url 'frontend:mark_notification_read' notif.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-success mb-1">
+                                    <i class="fas fa-check"></i> Mark Read
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            <form method="post" action="{% url 'frontend:delete_notification' notif.id %}" class="d-inline" onsubmit="return confirm('Delete this notification?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger mb-1">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bell-slash fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">No Notifications</h5>
+                <p class="text-muted">You're all caught up!</p>
+                <a href="{% url 'frontend:communication_center' %}" class="btn btn-primary mt-3">
+                    <i class="fas fa-arrow-left"></i> Back to Communication Center
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item {
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.border-start {
+    border-left-width: 4px !important;
+}
+</style>
+{% endblock %}

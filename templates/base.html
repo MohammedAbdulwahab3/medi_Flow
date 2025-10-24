@@ -278,11 +278,28 @@
                         </button>
                     </li>
 
-                    <!-- Notifications -->
+                    <!-- Communication Center -->
             {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link notification-badge" href="{% url 'prescription:notification_list' %}" title="Notifications">
+                        <a class="nav-link position-relative" href="{% url 'frontend:communication_center' %}" title="Messages & Notifications">
+                            <i class="fas fa-comments"></i>
+                            {% if unread_messages_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ unread_messages_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    
+                    <!-- Notifications -->
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{% url 'prescription:notification_list' %}" title="Notifications">
                             <i class="fas fa-bell"></i>
+                            {% if unread_notifications_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ unread_notifications_count }}
+                            </span>
+                            {% endif %}
                         </a>
                     </li>
 

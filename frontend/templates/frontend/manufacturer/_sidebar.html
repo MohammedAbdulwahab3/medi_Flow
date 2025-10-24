@@ -1,0 +1,82 @@
+<!-- Manufacturer Sidebar -->
+<nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'manufacturer_dashboard' %}active{% endif %}" 
+                   href="{% url 'frontend:manufacturer_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}" 
+                   href="{% url 'frontend:medicine_list' %}">
+                    <i class="fas fa-pills"></i> Medicines
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'batch_list' %}active{% endif %}" 
+                   href="{% url 'frontend:batch_list' %}">
+                    <i class="fas fa-boxes"></i> Batches
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'inventory_management' %}active{% endif %}" 
+                   href="{% url 'frontend:inventory_management' %}">
+                    <i class="fas fa-warehouse"></i> Inventory
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'manufacturer_reservations' %}active{% endif %}" 
+                   href="{% url 'frontend:manufacturer_reservations' %}">
+                    <i class="fas fa-inbox"></i> Reservation Requests
+                    {% if pending_reservations_count > 0 %}
+                    <span class="badge bg-danger rounded-pill ms-2">{{ pending_reservations_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'transfer_medicine' %}active{% endif %}" 
+                   href="{% url 'frontend:transfer_medicine' %}">
+                    <i class="fas fa-truck"></i> Transfer Medicine
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<style>
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem 0.5rem;
+    position: relative;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.sidebar .badge {
+    font-size: 0.65em;
+    padding: 0.25em 0.5em;
+}
+</style>

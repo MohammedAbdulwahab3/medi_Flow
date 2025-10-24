@@ -121,19 +121,19 @@ class MessageForm(forms.ModelForm):
     def __init__(self, sender=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if sender:
-            # If sender is a doctor, show their patients
-            if sender.is_doctor:
-                # Get patients from prescriptions or assignments
-                patient_ids = Prescription.objects.filter(doctor=sender).values_list('patient_id', flat=True).distinct()
-                assigned_patient_ids = PatientDoctorAssignment.objects.filter(doctor=sender).values_list('patient_id', flat=True).distinct()
-                all_patient_ids = set(list(patient_ids) + list(assigned_patient_ids))
-                self.fields['recipient'].queryset = User.objects.filter(id__in=all_patient_ids, role=User.ROLE_PATIENT)
-            # If sender is a patient, show their doctors
-            elif sender.is_patient:
-                doctor_ids = Prescription.objects.filter(patient=sender).values_list('doctor_id', flat=True).distinct()
-                assigned_doctor_ids = PatientDoctorAssignment.objects.filter(patient=sender).values_list('doctor_id', flat=True).distinct()
-                all_doctor_ids = set(list(doctor_ids) + list(assigned_doctor_ids))
-                self.fields['recipient'].queryset = User.objects.filter(id__in=all_doctor_ids, role=User.ROLE_DOCTOR)
+            # Use the new get_contactable_users function for comprehensive contact list
+            from .communication_utils import get_contactable_users
+            
+            contacts = get_contactable_users(sender)
+            
+            # Combine all contactable users from all categories
+            all_contactable_ids = []
+            for user_list in contacts.values():
+                all_contactable_ids.extend([u.id for u in user_list])
+            
+            # Set queryset to all contactable users
+            if all_contactable_ids:
+                self.fields['recipient'].queryset = User.objects.filter(id__in=all_contactable_ids).order_by('role', 'username')
             else:
                 self.fields['recipient'].queryset = User.objects.none()
 

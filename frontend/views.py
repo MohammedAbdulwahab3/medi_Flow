@@ -237,6 +237,10 @@ def pharmacist_medicine_search(request):
             available=F('current_stock') - F('reserved_stock')
         ).aggregate(total=Sum('available'))['total']) or 0
         
+        # ONLY show medicines with available stock > 0
+        if total_available <= 0:
+            continue
+        
         # Get price range from manufacturer batches (cost price)
         price_data = MedicineBatch.objects.filter(
             medicine=med, 
@@ -246,11 +250,16 @@ def pharmacist_medicine_search(request):
             max_price=Max('cost_price')
         )
         
+        # Get manufacturer info
+        manufacturer_name = med.manufacturer.full_name or med.manufacturer.username if med.manufacturer else 'Unknown'
+        
         med_list.append({
             'medicine': med, 
             'available': total_available,
             'min_price': price_data.get('min_price'),
             'max_price': price_data.get('max_price'),
+            'manufacturer_name': manufacturer_name,
+            'category': med.get_category_display(),
         })
 
     return render(request, 'frontend/pharmacist/medicine_search.html', {'med_rows': med_list, 'q': q})
@@ -347,6 +356,10 @@ def medicine_catalog(request):
             batch__medicine=med, 
             current_stock__gt=0
         ).aggregate(total=Sum('current_stock'))['total'] or 0
+        
+        # ONLY show medicines with available stock > 0
+        if total_available <= 0:
+            continue
         
         med_list.append({
             'medicine': med,
@@ -645,6 +658,41 @@ def accept_transfer(request, transfer_id):
 
 
 @login_required
+def pharmacist_update_price(request):
+    """Update selling price for pharmacy inventory item"""
+    if not request.user.is_pharmacist:
+        return redirect('frontend:pharmacist_dashboard')
+    
+    if request.method == 'POST':
+        inventory_id = request.POST.get('inventory_id')
+        selling_price = request.POST.get('selling_price')
+        
+        try:
+            inventory = PharmacyInventory.objects.get(
+                id=inventory_id,
+                pharmacist=request.user
+            )
+            
+            selling_price = float(selling_price)
+            if selling_price <= 0:
+                messages.error(request, 'Price must be greater than 0.')
+                return redirect('frontend:pharmacist_inventory')
+            
+            inventory.selling_price = selling_price
+            inventory.save()
+            
+            messages.success(request, f'Price updated to ${selling_price:.2f} for {inventory.batch.medicine.name}')
+        except PharmacyInventory.DoesNotExist:
+            messages.error(request, 'Inventory item not found.')
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid price entered.')
+        except Exception as e:
+            messages.error(request, f'Error updating price: {str(e)}')
+    
+    return redirect('frontend:pharmacist_inventory')
+
+
+@login_required
 def pharmacist_inventory(request):
     if not request.user.is_pharmacist:
         return redirect('frontend:pharmacist_dashboard')
@@ -894,7 +942,7 @@ def batch_list(request):
     batches = MedicineBatch.objects.filter(medicine__manufacturer=user, is_active=True).select_related('medicine').order_by('-manufacturing_date')
     
     if request.method == 'POST':
-        form = MedicineBatchForm(request.POST, manufacturer_user=user)
+        form = MedicineBatchForm(data=request.POST, manufacturer_user=user)
         if form.is_valid():
             batch = form.save()
             
@@ -907,6 +955,8 @@ def batch_list(request):
             
             messages.success(request, f'Batch {batch.batch_number} created successfully!')
             return redirect('frontend:batch_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = MedicineBatchForm(manufacturer_user=user)
     
@@ -915,6 +965,30 @@ def batch_list(request):
         'form': form,
     }
     return render(request, 'frontend/manufacturer/batch_list.html', context)
+
+
+@login_required
+@user_passes_test(is_manufacturer)
+def batch_edit(request, batch_id):
+    """Edit an existing batch"""
+    batch = get_object_or_404(MedicineBatch, id=batch_id, medicine__manufacturer=request.user)
+    
+    if request.method == 'POST':
+        form = MedicineBatchForm(data=request.POST, manufacturer_user=request.user, instance=batch)
+        if form.is_valid():
+            updated_batch = form.save()
+            messages.success(request, f'Batch {updated_batch.batch_number} updated successfully!')
+            return redirect('frontend:batch_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = MedicineBatchForm(manufacturer_user=request.user, instance=batch)
+    
+    context = {
+        'form': form,
+        'batch': batch,
+    }
+    return render(request, 'frontend/manufacturer/batch_edit.html', context)
 
 @login_required
 @user_passes_test(is_manufacturer)
@@ -1223,84 +1297,113 @@ def transfer_medicine(request):
     user = request.user
     
     if request.method == 'POST':
-        form = MedicineTransferForm(request.POST)
-        if form.is_valid():
-            transfer = form.save(commit=False)
-            transfer.from_user = user
-
-            # Atomic stock decrement to avoid race conditions
+        batch_id = request.POST.get('batch_id')
+        to_pharmacy_id = request.POST.get('to_pharmacy_id')
+        quantity = request.POST.get('quantity')
+        notes = request.POST.get('notes', '')
+        
+        # Validate inputs
+        try:
+            batch = MedicineBatch.objects.get(id=batch_id, medicine__manufacturer=user, is_active=True)
+            to_pharmacy = User.objects.get(id=to_pharmacy_id, role=User.ROLE_PHARMACIST)
+            quantity = int(quantity)
+            
+            if quantity <= 0:
+                messages.error(request, 'Quantity must be greater than 0.')
+                return redirect('frontend:transfer_medicine')
+            
+            # Check if batch is expired
+            if batch.is_expired:
+                messages.error(request, f'Cannot transfer expired batch {batch.batch_number}.')
+                return redirect('frontend:transfer_medicine')
+            
+            # Atomic stock check and decrement
             with transaction.atomic():
-                batch = transfer.batch
-                inv = Inventory.objects.select_for_update().get(pk=batch.inventory.pk)
-                if (inv.current_stock or 0) < (transfer.quantity or 0):
-                    messages.error(request, 'Insufficient stock to transfer the requested quantity.')
+                inv = Inventory.objects.select_for_update().get(batch=batch)
+                available = (inv.current_stock or 0) - (inv.reserved_stock or 0)
+                
+                if available <= 0:
+                    messages.error(request, f'Batch {batch.batch_number} is out of stock.')
                     return redirect('frontend:transfer_medicine')
-                Inventory.objects.filter(pk=inv.pk).update(
-                    current_stock=F('current_stock') - (transfer.quantity or 0)
+                
+                if quantity > available:
+                    messages.error(request, f'Insufficient stock. Only {available} units available (Current: {inv.current_stock}, Reserved: {inv.reserved_stock}).')
+                    return redirect('frontend:transfer_medicine')
+                
+                # Create transfer
+                transfer = MedicineTransfer.objects.create(
+                    transfer_type='manufacturer_to_pharmacy',
+                    from_user=user,
+                    to_user=to_pharmacy,
+                    batch=batch,
+                    quantity=quantity,
+                    notes=notes,
+                    is_completed=False
                 )
-                transfer.save()
-
-            # If this transfer was created as part of a reservation flow, link it by noting the reservation id
-            reservation_id = request.POST.get('reservation_id')
-            if reservation_id:
-                from inventory.models import ReservationRequest
-                try:
-                    req = ReservationRequest.objects.get(id=int(reservation_id), pharmacy__isnull=False)
-                    # Mark as accepted/transferred in note (avoid schema changes)
-                    req.status = ReservationRequest.STATUS_RESERVED
-                    extra = req.note or ''
-                    extra += f"|transfer_id:{transfer.id}"
-                    req.note = extra
-                    req.save()
-                except Exception:
-                    # ignore silently; this is best-effort tagging
-                    pass
-
-            messages.success(request, f'Transfer of {transfer.quantity} units created successfully!')
+                
+                # Update inventory
+                Inventory.objects.filter(pk=inv.pk).update(
+                    current_stock=F('current_stock') - quantity
+                )
+            
+            messages.success(request, f'Transfer of {quantity} units of {batch.medicine.name} (Batch: {batch.batch_number}) to {to_pharmacy.username} created successfully!')
             return redirect('frontend:transfer_medicine')
-    else:
-        form = MedicineTransferForm()
-    
-    # Set up form fields after creation
-    if hasattr(form, 'fields'):
-        # Filter batches to only show those from the manufacturer
-        form.fields['batch'].queryset = MedicineBatch.objects.filter(
-            medicine__manufacturer=user,
-            is_active=True
-        ).select_related('medicine', 'inventory')
+            
+        except MedicineBatch.DoesNotExist:
+            messages.error(request, 'Selected batch not found or does not belong to you.')
+        except User.DoesNotExist:
+            messages.error(request, 'Selected pharmacy not found.')
+        except ValueError:
+            messages.error(request, 'Invalid quantity entered.')
+        except Inventory.DoesNotExist:
+            messages.error(request, 'Inventory not found for this batch.')
+        except Exception as e:
+            messages.error(request, f'Transfer failed: {str(e)}')
         
-        # Filter recipients to only show pharmacists and doctors
-        form.fields['to_user'].queryset = User.objects.filter(
-            role__in=[User.ROLE_PHARMACIST, User.ROLE_DOCTOR]
-        )
-        
-        # Set from_user to manufacturer
-        form.fields['from_user'].initial = user
-        form.fields['from_user'].widget = forms.HiddenInput()
+        return redirect('frontend:transfer_medicine')
     
-    # Get available batches and potential recipients
-    available_batches = MedicineBatch.objects.filter(
+    # GET request - show available batches
+    from django.db.models import F as DjangoF
+    available_batches_qs = MedicineBatch.objects.filter(
         medicine__manufacturer=user,
         is_active=True
-    ).select_related('medicine', 'inventory').filter(inventory__current_stock__gt=0)
+    ).select_related('medicine', 'inventory').annotate(
+        available_stock_calc=DjangoF('inventory__current_stock') - DjangoF('inventory__reserved_stock')
+    )
+    
+    # Build batch list with availability info
+    available_batches = []
+    for batch in available_batches_qs:
+        inv = batch.inventory
+        available_stock = (inv.current_stock or 0) - (inv.reserved_stock or 0)
+        
+        # Only show batches that have available stock and are not expired
+        if available_stock > 0 and not batch.is_expired:
+            batch_info = batch
+            batch_info.available_stock = available_stock
+            batch_info.current_stock_display = inv.current_stock
+            batch_info.reserved_stock_display = inv.reserved_stock
+            available_batches.append(batch_info)
+    
+    # Get all pharmacies
+    pharmacies = User.objects.filter(role=User.ROLE_PHARMACIST).order_by('username')
     
     # Get recent transfers
     recent_transfers = MedicineTransfer.objects.filter(
         from_user=user
     ).select_related('to_user', 'batch__medicine').order_by('-transfer_date')[:10]
     
-    # Prefill from query params (when redirected after accepting a reservation)
-    prefill = {
-        'batch_id': request.GET.get('batch_id'),
-        'quantity': request.GET.get('quantity'),
-        'reservation_id': request.GET.get('reservation_id'),
-    }
-
+    # Get pending reservation requests
+    pending_requests = ReservationRequest.objects.filter(
+        manufacturer=user,
+        status=ReservationRequest.STATUS_PENDING
+    ).select_related('pharmacy', 'medicine').order_by('-created_at')[:5]
+    
     context = {
-        'form': form,
         'available_batches': available_batches,
+        'pharmacies': pharmacies,
         'recent_transfers': recent_transfers,
-        'prefill': prefill,
+        'pending_requests': pending_requests,
     }
     return render(request, 'frontend/manufacturer/transfer_medicine.html', context)
 

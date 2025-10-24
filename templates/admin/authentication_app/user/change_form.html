@@ -1,0 +1,299 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block admin_content %}
+<div class="admin-form-view">
+  <!-- Page Header -->
+  <div class="admin-page-header">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="page-title">
+          <i class="fas fa-user me-2"></i>
+          {% if add %}
+          Add User
+          {% else %}
+          Edit User
+          {% endif %}
+        </h2>
+        <p class="text-muted mb-0">
+          {% if add %}
+          Create a new system user
+          {% else %}
+          Modify user details and permissions
+          {% endif %}
+        </p>
+      </div>
+      <div class="page-actions">
+        {% if not is_popup %}
+        <a href="{% url 'admin:authentication_app_user_changelist' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Back to Users
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Container -->
+  <div class="admin-form-container">
+    <form {% if has_file_field %}enctype="multipart/form-data" {% endif %}method="post" id="{{ opts.model_name }}_form" novalidate>
+      {% csrf_token %}
+      
+      {% if is_popup %}
+        <input type="hidden" name="{{ is_popup_var }}" value="1">
+      {% endif %}
+      
+      {% if to_field %}
+        <input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">
+      {% endif %}
+      
+      {% if save_on_top %}
+        {% block submit_buttons_top %}{% submit_row %}{% endblock %}
+      {% endif %}
+      
+      {% if errors %}
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Please correct the errors below.</strong>
+        {{ adminform.form.non_field_errors }}
+      </div>
+      {% endif %}
+      
+      <div class="row">
+        <div class="col-lg-8">
+          <!-- Main Form Fields -->
+          <div class="form-section">
+            <h5 class="section-title">
+              <i class="fas fa-user-circle me-2"></i>
+              User Information
+            </h5>
+            
+            <div class="row g-3">
+              {% for fieldset in adminform %}
+                {% for line in fieldset %}
+                  {% for field in line %}
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        {{ field.errors }}
+                        <label for="{{ field.field.id_for_label }}" class="form-label">
+                          {{ field.field.label }}
+                          {% if field.field.field.required %}
+                          <span class="text-danger">*</span>
+                          {% endif %}
+                        </label>
+                        {{ field.field }}
+                        {% if field.field.help_text %}
+                        <div class="form-text">{{ field.field.help_text }}</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
+          
+          <!-- Inline Formsets -->
+          {% block inline_field_sets %}
+          {% for inline_admin_formset in inline_admin_formsets %}
+            {% include inline_admin_formset.opts.template %}
+          {% endfor %}
+          {% endblock %}
+        </div>
+        
+        <div class="col-lg-4">
+          <!-- Sidebar with Actions -->
+          <div class="form-sidebar">
+            <!-- Submit Buttons -->
+            <div class="sidebar-card">
+              <h6 class="card-title">
+                <i class="fas fa-bolt me-2"></i>
+                Actions
+              </h6>
+              <div class="card-body">
+                {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+              </div>
+            </div>
+            
+            <!-- History -->
+            {% block object-tools %}
+            {% if change and not is_popup %}
+            <div class="sidebar-card">
+              <h6 class="card-title">
+                <i class="fas fa-history me-2"></i>
+                History
+              </h6>
+              <div class="card-body">
+                <a href="{% url opts|admin_urlname:'history' original.pk|admin_urlquote %}" class="btn btn-outline-secondary w-100">
+                  <i class="fas fa-history me-2"></i>
+                  View History
+                </a>
+              </div>
+            </div>
+            {% endif %}
+            {% endblock %}
+            
+            <!-- Related Items -->
+            {% if adminform.form.related_fields %}
+            <div class="sidebar-card">
+              <h6 class="card-title">
+                <i class="fas fa-link me-2"></i>
+                Related Items
+              </h6>
+              <div class="card-body">
+                {% for related_field in adminform.form.related_fields %}
+                <div class="mb-2">
+                  <label class="form-label">{{ related_field.label }}</label>
+                  {{ related_field }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* Form View Styles */
+.admin-form-view {
+  padding: 0;
+}
+
+.admin-page-header {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+/* Form Container */
+.admin-form-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section-title {
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--brand-primary);
+  display: inline-block;
+}
+
+/* Form Fields */
+.form-label {
+  font-weight: 500;
+  color: var(--fg-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+}
+
+.form-text {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+}
+
+/* Sidebar */
+.form-sidebar {
+  position: sticky;
+  top: 2rem;
+}
+
+.sidebar-card {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.sidebar-card:last-child {
+  margin-bottom: 0;
+}
+
+.card-title {
+  font-weight: 600;
+  color: var(--fg-primary);
+  margin-bottom: 1rem;
+}
+
+/* Submit Row */
+.submit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.submit-row input, .submit-row a {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .form-sidebar {
+    position: static;
+    margin-top: 2rem;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Add form validation
+  const form = document.getElementById('{{ opts.model_name }}_form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      // Add any custom validation here if needed
+    });
+  }
+  
+  // Add tooltips to form elements with title attributes
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+});
+</script>
+{% endblock %}

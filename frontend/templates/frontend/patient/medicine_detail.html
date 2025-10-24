@@ -262,8 +262,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-<script id="detail-pharmacies-data" type="application/json">{{ pharmacy_list|default:'[]'|safe|json_script:'pharmacies' }}</script>
-
 <script>
 function openDirections(lat, lng){
     const dest = `${lat},${lng}`;
@@ -272,23 +270,53 @@ function openDirections(lat, lng){
     window.open(url, '_blank');
 }
 
+// Pharmacy data from backend
+const pharmacyData = [
+    {% for p in pharmacy_list %}
+    {
+        lat: {{ p.profile.latitude|default:'null' }},
+        lng: {{ p.profile.longitude|default:'null' }},
+        name: "{{ p.profile.pharmacy_name|default:p.pharmacist.username|escapejs }}",
+        address: "{{ p.profile.address|default:'No address'|escapejs }}",
+        stock: {{ p.total_stock }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
 document.addEventListener('DOMContentLoaded', function(){
     try{
-        const pharmacies = JSON.parse(document.getElementById('detail-pharmacies-data').textContent || '[]');
-        const coords = pharmacies.map(p => ({lat: p.profile && p.profile.latitude ? parseFloat(p.profile.latitude) : null, lng: p.profile && p.profile.longitude ? parseFloat(p.profile.longitude) : null, name: p.profile && p.profile.pharmacy_name ? p.profile.pharmacy_name : (p.pharmacist && p.pharmacist.username ? p.pharmacist.username : 'Pharmacy')})).filter(p=>p.lat && p.lng);
-        if(coords.length===0) return;
+        const coords = pharmacyData.filter(p => p.lat !== null && p.lng !== null);
+        if(coords.length === 0) {
+            document.getElementById('mini-map').innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-map-marker-alt-slash fa-3x mb-2"></i><p>No pharmacy locations available</p></div>';
+            return;
+        }
 
-        const m = L.map('mini-map', {zoomControl: false}).setView([coords[0].lat, coords[0].lng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution: '© OpenStreetMap contributors'}).addTo(m);
-        const group = [];
+        const m = L.map('mini-map', {zoomControl: true}).setView([coords[0].lat, coords[0].lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom:19, 
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(m);
+        
+        const markers = [];
         coords.forEach(c=>{
-            const mk = L.marker([c.lat, c.lng]).addTo(m).bindPopup(`<strong>${c.name}</strong>`);
-            group.push(mk);
+            const popupContent = `
+                <div style="min-width: 180px;">
+                    <h6><strong>${c.name}</strong></h6>
+                    <p class="small mb-1">${c.address}</p>
+                    <p class="small mb-0"><strong>Stock:</strong> ${c.stock} units</p>
+                </div>
+            `;
+            const mk = L.marker([c.lat, c.lng]).addTo(m).bindPopup(popupContent);
+            markers.push(mk);
         });
-        const fg = L.featureGroup(group);
-        m.fitBounds(fg.getBounds().pad(0.1));
+        
+        if (markers.length > 0) {
+            const fg = L.featureGroup(markers);
+            m.fitBounds(fg.getBounds().pad(0.1));
+        }
     }catch(err){
         console.error('Mini-map init error', err);
+        document.getElementById('mini-map').innerHTML = '<div class="text-center text-danger py-5"><i class="fas fa-exclamation-triangle fa-3x mb-2"></i><p>Error loading map</p></div>';
     }
 });
 </script>

@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-comments"></i> Communication Center</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'prescription:message_compose' %}" class="btn btn-primary me-2">
+                <i class="fas fa-pen"></i> New Message
+            </a>
+            <a href="{% url 'frontend:notification_center' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-bell"></i> All Notifications
+                {% if unread_notifications > 0 %}
+                <span class="badge bg-danger">{{ unread_notifications }}</span>
+                {% endif %}
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Messages Section -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-inbox"></i> Messages
+                        {% if unread_messages > 0 %}
+                        <span class="badge bg-warning float-end">{{ unread_messages }} unread</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="messageTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="inbox-tab" data-bs-toggle="tab" data-bs-target="#inbox" type="button">
+                                <i class="fas fa-inbox"></i> Inbox
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button">
+                                <i class="fas fa-paper-plane"></i> Sent
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="messageTabContent">
+                        <!-- Inbox Tab -->
+                        <div class="tab-pane fade show active" id="inbox" role="tabpanel">
+                            {% if received_messages %}
+                            <div class="list-group">
+                                {% for msg in received_messages %}
+                                <a href="{% url 'prescription:message_detail' msg.id %}" class="list-group-item list-group-item-action {% if not msg.is_read %}fw-bold bg-light{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">
+                                            {% if not msg.is_read %}<i class="fas fa-envelope text-primary"></i>{% else %}<i class="fas fa-envelope-open text-muted"></i>{% endif %}
+                                            {{ msg.sender.full_name|default:msg.sender.username }}
+                                            <span class="badge bg-secondary">{{ msg.sender.get_role_display }}</span>
+                                        </h6>
+                                        <small>{{ msg.sent_at|timesince }} ago</small>
+                                    </div>
+                                    <p class="mb-1">{{ msg.subject|default:"No subject" }}</p>
+                                    <small class="text-muted">{{ msg.body|truncatewords:15 }}</small>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            <div class="text-center mt-3">
+                                <a href="{% url 'prescription:message_inbox' %}" class="btn btn-sm btn-outline-primary">
+                                    View All Messages
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No messages in your inbox</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Sent Tab -->
+                        <div class="tab-pane fade" id="sent" role="tabpanel">
+                            {% if sent_messages %}
+                            <div class="list-group">
+                                {% for msg in sent_messages %}
+                                <a href="{% url 'prescription:message_detail' msg.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-paper-plane text-success"></i>
+                                            To: {{ msg.recipient.full_name|default:msg.recipient.username }}
+                                            <span class="badge bg-secondary">{{ msg.recipient.get_role_display }}</span>
+                                        </h6>
+                                        <small>{{ msg.sent_at|timesince }} ago</small>
+                                    </div>
+                                    <p class="mb-1">{{ msg.subject|default:"No subject" }}</p>
+                                    <small class="text-muted">{{ msg.body|truncatewords:15 }}</small>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-paper-plane fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No sent messages</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Contacts & Notifications -->
+        <div class="col-lg-4">
+            <!-- Quick Contacts -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-users"></i> Quick Contacts</h6>
+                </div>
+                <div class="card-body">
+                    {% if contacts.pharmacists or contacts.manufacturers or contacts.doctors or contacts.patients %}
+                        {% if contacts.pharmacists %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-pills text-primary"></i> Pharmacists</strong>
+                            <div class="list-group mt-2">
+                                {% for pharmacist in contacts.pharmacists|slice:":5" %}
+                                <a href="{% url 'frontend:conversation_view' pharmacist.id %}" class="list-group-item list-group-item-action py-2">
+                                    {{ pharmacist.full_name|default:pharmacist.username }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if contacts.manufacturers %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-industry text-info"></i> Manufacturers</strong>
+                            <div class="list-group mt-2">
+                                {% for manufacturer in contacts.manufacturers|slice:":5" %}
+                                <a href="{% url 'frontend:conversation_view' manufacturer.id %}" class="list-group-item list-group-item-action py-2">
+                                    {{ manufacturer.full_name|default:manufacturer.username }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if contacts.doctors %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-user-md text-success"></i> Doctors</strong>
+                            <div class="list-group mt-2">
+                                {% for doctor in contacts.doctors|slice:":5" %}
+                                <a href="{% url 'frontend:conversation_view' doctor.id %}" class="list-group-item list-group-item-action py-2">
+                                    Dr. {{ doctor.full_name|default:doctor.username }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if contacts.patients %}
+                        <div class="mb-3">
+                            <strong><i class="fas fa-user text-warning"></i> Patients</strong>
+                            <div class="list-group mt-2">
+                                {% for patient in contacts.patients|slice:":5" %}
+                                <a href="{% url 'frontend:conversation_view' patient.id %}" class="list-group-item list-group-item-action py-2">
+                                    {{ patient.full_name|default:patient.username }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                    <p class="text-muted text-center">No contacts available yet</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Notifications -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="fas fa-bell"></i> Recent Notifications</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_notifications %}
+                    <div class="list-group list-group-flush">
+                        {% for notif in recent_notifications|slice:":8" %}
+                        <a href="{% if notif.action_url %}{{ notif.action_url }}{% else %}{% url 'frontend:mark_notification_read' notif.id %}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if not notif.is_read %}bg-light{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <small class="mb-1">
+                                    {% if not notif.is_read %}<i class="fas fa-circle text-primary" style="font-size: 8px;"></i>{% endif %}
+                                    <strong>{{ notif.title }}</strong>
+                                </small>
+                                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                            </div>
+                            <small class="text-muted">{{ notif.message|truncatewords:10 }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="{% url 'frontend:notification_center' %}" class="btn btn-sm btn-outline-warning">
+                            View All Notifications
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No notifications</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+.badge {
+    font-size: 0.75em;
+}
+</style>
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import pharmacy_views
+from . import communication_views
 
 app_name = 'frontend'
 
@@ -23,6 +24,7 @@ urlpatterns = [
     # Pharmacist location settings
     path('pharmacist/settings/location/', views.pharmacist_location_settings, name='pharmacist_location_settings'),
     path('pharmacist/inventory/', views.pharmacist_inventory, name='pharmacist_inventory'),
+    path('pharmacist/inventory/update-price/', views.pharmacist_update_price, name='pharmacist_update_price'),
     path('pharmacist/transfers/', views.pharmacist_transfers, name='pharmacist_transfers'),
     path('pharmacist/transfers/<int:transfer_id>/accept/', views.accept_transfer, name='accept_transfer'),
     
@@ -32,6 +34,7 @@ urlpatterns = [
     path('manufacturer/medicines/<int:medicine_id>/simple/', views.medicine_detail_simple, name='medicine_detail_simple'),
     path('manufacturer/medicines/<int:medicine_id>/edit/', views.edit_medicine, name='medicine_edit'),
     path('manufacturer/batches/', views.batch_list, name='batch_list'),
+    path('manufacturer/batches/<int:batch_id>/edit/', views.batch_edit, name='batch_edit'),
     path('manufacturer/inventory/', views.inventory_management, name='inventory_management'),
     path('manufacturer/inventory/<int:inventory_id>/view/', views.manufacturer_inventory_detail, name='manufacturer_inventory_detail'),
     path('manufacturer/inventory/<int:inventory_id>/accept/', views.manufacturer_accept_reservation, name='manufacturer_accept_reservation'),
@@ -60,4 +63,14 @@ urlpatterns = [
     path('appointments/', views.appointment_scheduler, name='appointment_scheduler'),
     path('emergency/', views.emergency_contacts, name='emergency_contacts'),
     path('bulk/', views.bulk_operations, name='bulk_operations'),
+    
+    # Communication Center
+    path('communication/', communication_views.communication_center, name='communication_center'),
+    path('communication/quick-message/', communication_views.quick_message, name='quick_message'),
+    path('communication/conversation/<int:user_id>/', communication_views.conversation_view, name='conversation_view'),
+    path('communication/search-users/', communication_views.search_users, name='search_users'),
+    path('communication/notifications/', communication_views.notification_center, name='notification_center'),
+    path('communication/notifications/<int:notification_id>/read/', communication_views.mark_notification_read, name='mark_notification_read'),
+    path('communication/notifications/mark-all-read/', communication_views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('communication/notifications/<int:notification_id>/delete/', communication_views.delete_notification, name='delete_notification'),
 ]

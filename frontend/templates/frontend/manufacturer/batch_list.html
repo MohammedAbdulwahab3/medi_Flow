@@ -110,9 +110,9 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-warning" onclick="editBatch({{ batch.id }})">
+                                        <a href="{% url 'frontend:batch_edit' batch.id %}" class="btn btn-sm btn-outline-warning">
                                             <i class="fas fa-edit"></i> Edit
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -143,30 +143,48 @@
             <form method="post">
                 {% csrf_token %}
                 <div class="modal-body">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> <strong>Note:</strong> Make sure you have created a medicine first before adding a batch.
+                    </div>
+                    
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.medicine.id_for_label }}" class="form-label">Medicine *</label>
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.medicine.id_for_label }}" class="form-label">Select Medicine *</label>
                             {{ form.medicine }}
                             {% if form.medicine.errors %}
                                 <div class="invalid-feedback d-block">{{ form.medicine.errors.0 }}</div>
                             {% endif %}
+                            <small class="form-text text-muted">Choose from your existing medicines</small>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.batch_number.id_for_label }}" class="form-label">Batch Number *</label>
                             {{ form.batch_number }}
                             {% if form.batch_number.errors %}
                                 <div class="invalid-feedback d-block">{{ form.batch_number.errors.0 }}</div>
                             {% endif %}
+                            <small class="form-text text-muted">Unique identifier for this batch</small>
                         </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantity *</label>
-                            {{ form.quantity }}
+                            <div class="input-group">
+                                {{ form.quantity }}
+                                <span class="input-group-text">units</span>
+                            </div>
                             {% if form.quantity.errors %}
                                 <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
                             {% endif %}
+                            <small class="form-text text-muted">Total units in this batch</small>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.manufacturing_date.id_for_label }}" class="form-label">Manufacturing Date *</label>
                             {{ form.manufacturing_date }}
@@ -174,8 +192,6 @@
                                 <div class="invalid-feedback d-block">{{ form.manufacturing_date.errors.0 }}</div>
                             {% endif %}
                         </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.expiry_date.id_for_label }}" class="form-label">Expiry Date *</label>
                             {{ form.expiry_date }}
@@ -183,20 +199,33 @@
                                 <div class="invalid-feedback d-block">{{ form.expiry_date.errors.0 }}</div>
                             {% endif %}
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="{{ form.cost_price.id_for_label }}" class="form-label">Cost Price *</label>
-                            {{ form.cost_price }}
+                            <label for="{{ form.cost_price.id_for_label }}" class="form-label">Cost Price (per unit) *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.cost_price }}
+                            </div>
                             {% if form.cost_price.errors %}
                                 <div class="invalid-feedback d-block">{{ form.cost_price.errors.0 }}</div>
                             {% endif %}
+                            <small class="form-text text-muted">Your manufacturing cost per unit</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.selling_price.id_for_label }}" class="form-label">Selling Price (per unit) *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.selling_price }}
+                            </div>
+                            {% if form.selling_price.errors %}
+                                <div class="invalid-feedback d-block">{{ form.selling_price.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Recommended retail price per unit</small>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="{{ form.selling_price.id_for_label }}" class="form-label">Selling Price *</label>
-                        {{ form.selling_price }}
-                        {% if form.selling_price.errors %}
-                            <div class="invalid-feedback d-block">{{ form.selling_price.errors.0 }}</div>
-                        {% endif %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-calculator"></i> <strong>Profit Margin:</strong> Make sure selling price is higher than cost price.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -270,10 +299,5 @@
 <!-- Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-<script>
-function editBatch(batchId) {
-    // TODO: Implement edit functionality
-    alert('Edit functionality for batch ID: ' + batchId + ' will be implemented here');
-}
-</script>
+
 {% endblock %}

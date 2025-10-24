@@ -167,6 +167,17 @@ class Notification(models.Model):
         ('message_received', 'Message Received'),
         ('appointment_reminder', 'Appointment Reminder'),
         ('doctor_assigned', 'Doctor Assigned'),
+        # Inventory & Transfer notifications
+        ('transfer_received', 'Transfer Received'),
+        ('transfer_accepted', 'Transfer Accepted'),
+        ('reservation_request', 'Reservation Request'),
+        ('reservation_approved', 'Reservation Approved'),
+        ('reservation_rejected', 'Reservation Rejected'),
+        ('low_stock_alert', 'Low Stock Alert'),
+        ('expiry_warning', 'Expiry Warning'),
+        ('reorder_alert', 'Reorder Alert'),
+        # General
+        ('system_announcement', 'System Announcement'),
     ]
 
     user = models.ForeignKey(
@@ -192,6 +203,10 @@ class Notification(models.Model):
         null=True, 
         blank=True
     )
+    # Additional related objects for comprehensive notifications
+    related_object_id = models.PositiveIntegerField(null=True, blank=True, help_text="Generic FK for related objects")
+    related_object_type = models.CharField(max_length=50, blank=True, default='', help_text="Type: transfer, reservation, batch, etc.")
+    action_url = models.CharField(max_length=500, blank=True, default='', help_text="Direct link to action page")
 
     class Meta:
         ordering = ['-created_at']

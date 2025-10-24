@@ -71,6 +71,7 @@
                                     <th>Generic Name</th>
                                     <th>Strength</th>
                                     <th>Dosage Form</th>
+                                    <th>Category</th>
                                     <th>Status</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -85,7 +86,10 @@
                                     <td>{{ medicine.generic_name|default:"-" }}</td>
                                     <td>{{ medicine.strength|default:"-" }}</td>
                                     <td>
-                                        <span class="badge bg-info">{{ medicine.dosage_form|default:"-" }}</span>
+                                        <span class="badge bg-info">{{ medicine.get_dosage_form_display|default:"-" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ medicine.get_category_display }}</span>
                                     </td>
                                     <td>
                                         {% if medicine.is_active %}
@@ -132,6 +136,12 @@
             <form method="post">
                 {% csrf_token %}
                 <div class="modal-body">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.name.id_for_label }}" class="form-label">Medicine Name *</label>
@@ -139,6 +149,7 @@
                             {% if form.name.errors %}
                                 <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
                             {% endif %}
+                            <small class="form-text text-muted">Brand or trade name</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.generic_name.id_for_label }}" class="form-label">Generic Name</label>
@@ -146,21 +157,29 @@
                             {% if form.generic_name.errors %}
                                 <div class="invalid-feedback d-block">{{ form.generic_name.errors.0 }}</div>
                             {% endif %}
+                            <small class="form-text text-muted">Active ingredient name</small>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="{{ form.strength.id_for_label }}" class="form-label">Strength</label>
                             {{ form.strength }}
                             {% if form.strength.errors %}
                                 <div class="invalid-feedback d-block">{{ form.strength.errors.0 }}</div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.dosage_form.id_for_label }}" class="form-label">Dosage Form</label>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.dosage_form.id_for_label }}" class="form-label">Dosage Form *</label>
                             {{ form.dosage_form }}
                             {% if form.dosage_form.errors %}
                                 <div class="invalid-feedback d-block">{{ form.dosage_form.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -170,6 +189,14 @@
                         {% if form.description.errors %}
                             <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
                         {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label">Image URL <small class="text-muted">(Optional)</small></label>
+                        {{ form.image }}
+                        {% if form.image.errors %}
+                            <div class="invalid-feedback d-block">{{ form.image.errors.0 }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Provide a URL to an image of the medicine</small>
                     </div>
                 </div>
                 <div class="modal-footer">

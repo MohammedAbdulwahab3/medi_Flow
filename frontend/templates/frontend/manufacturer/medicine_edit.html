@@ -4,32 +4,52 @@
   <div class="row justify-content-center">
     <div class="col-md-8">
       <div class="card shadow-sm">
-        <div class="card-header">
-          <h5 class="mb-0">Edit Medicine - {{ medicine.name }}</h5>
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-edit"></i> Edit Medicine - {{ medicine.name }}</h5>
         </div>
         <div class="card-body">
+          {% if form.errors %}
+            <div class="alert alert-danger" role="alert">
+              <strong>Please correct the following errors:</strong>
+              <ul class="mb-0">
+                {% for field, errors in form.errors.items %}
+                  {% for error in errors %}
+                    <li>{{ field }}: {{ error }}</li>
+                  {% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+          
           <form method="post">
             {% csrf_token %}
-            <div class="mb-3">
-              <label class="form-label" for="id_name">Name</label>
-              {{ form.name }}
-              {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>{% endif %}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="id_name">Medicine Name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="id_generic_name">Generic Name</label>
+                {{ form.generic_name }}
+                {% if form.generic_name.errors %}<div class="invalid-feedback d-block">{{ form.generic_name.errors.0 }}</div>{% endif %}
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="id_generic_name">Generic name</label>
-              {{ form.generic_name }}
-              {% if form.generic_name.errors %}<div class="invalid-feedback d-block">{{ form.generic_name.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
+            <div class="row">
+              <div class="col-md-4 mb-3">
                 <label class="form-label" for="id_strength">Strength</label>
                 {{ form.strength }}
                 {% if form.strength.errors %}<div class="invalid-feedback d-block">{{ form.strength.errors.0 }}</div>{% endif %}
               </div>
-              <div class="col-md-6">
-                <label class="form-label" for="id_dosage_form">Dosage form</label>
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="id_dosage_form">Dosage Form *</label>
                 {{ form.dosage_form }}
                 {% if form.dosage_form.errors %}<div class="invalid-feedback d-block">{{ form.dosage_form.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label" for="id_category">Category *</label>
+                {{ form.category }}
+                {% if form.category.errors %}<div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>{% endif %}
               </div>
             </div>
             <div class="mb-3">
@@ -37,9 +57,18 @@
               {{ form.description }}
               {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>{% endif %}
             </div>
-            <div class="d-flex justify-content-end">
-              <a href="{% url 'frontend:medicine_list' %}" class="btn btn-secondary me-2">Cancel</a>
-              <button type="submit" class="btn btn-primary">Save changes</button>
+            <div class="mb-3">
+              <label class="form-label" for="id_image">Image URL <small class="text-muted">(Optional)</small></label>
+              {{ form.image }}
+              {% if form.image.errors %}<div class="invalid-feedback d-block">{{ form.image.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <a href="{% url 'frontend:medicine_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Changes
+              </button>
             </div>
           </form>
         </div>
